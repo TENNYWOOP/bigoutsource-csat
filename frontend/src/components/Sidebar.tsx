@@ -9,19 +9,20 @@ import {
   ChevronLeft,
   History
 } from 'lucide-react';
+import { useAuth } from '../lib/auth';
 import { cn } from '../lib/utils';
-
-const navItems = [
-  { name: 'Survey summary', path: '/', icon: LayoutDashboard },
-  { name: 'Ratings', path: '/ratings', icon: Star },
-  { name: 'Surveys', path: '/surveys', icon: ClipboardList },
-  { name: 'Personnel', path: '/personnel', icon: Users },
-  { name: 'Audit Logs', path: '/audit-logs', icon: History },
-  { name: 'Settings', path: '/settings', icon: Settings },
-];
 
 export function Sidebar() {
   const location = useLocation();
+  const { user, logout, hasPermission } = useAuth();
+
+  const navItems = [
+    { name: 'Survey summary', path: '/', icon: LayoutDashboard },
+    ...(hasPermission('view_surveys') ? [{ name: 'Surveys', path: '/surveys', icon: ClipboardList }] : []),
+    ...(hasPermission('view_personnel') ? [{ name: 'Personnel', path: '/personnel', icon: Users }] : []),
+    ...(hasPermission('view_audit_logs') ? [{ name: 'Audit Logs', path: '/audit-logs', icon: History }] : []),
+    { name: 'Settings', path: '/settings', icon: Settings },
+  ];
 
   return (
     <aside className="w-64 bg-white border-r border-gray-200 h-screen flex flex-col fixed left-0 top-0">
@@ -63,14 +64,14 @@ export function Sidebar() {
       <div className="p-4 border-t border-gray-200">
         <div className="flex items-center gap-3 mb-6 px-2">
           <div className="w-9 h-9 rounded-full bg-gray-100 flex items-center justify-center text-gray-600 font-semibold text-sm border border-gray-200">
-            SV
+            {user?.name?.charAt(0) || 'U'}
           </div>
           <div className="flex flex-col">
-            <span className="text-sm font-semibold text-gray-900 leading-none">Sarah Vance</span>
-            <span className="text-xs text-gray-500 mt-1 uppercase tracking-wider font-medium">Super Admin</span>
+            <span className="text-sm font-semibold text-gray-900 leading-none">{user?.name}</span>
+            <span className="text-xs text-gray-500 mt-1 uppercase tracking-wider font-medium">{user?.role?.name}</span>
           </div>
         </div>
-        <button className="flex items-center justify-between w-full px-2 text-sm text-red-500 font-medium hover:text-red-600 transition-colors">
+        <button onClick={logout} className="flex items-center justify-between w-full px-2 text-sm text-red-500 font-medium hover:text-red-600 transition-colors">
           <div className="flex items-center gap-2">
             <LogOut className="w-4 h-4" />
             <span>Log out</span>

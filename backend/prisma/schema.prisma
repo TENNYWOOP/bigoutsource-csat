@@ -1,21 +1,140 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-// Get a free hosted Postgres database in seconds: `npx create-db`
-
 generator client {
-  provider = "prisma-client"
-  output   = "../generated/prisma"
+  provider = "prisma-client-js"
 }
 
 datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
+  provider = "sqlite"
+  url      = "file:./dev.db"
+}
+
+model Department {
+  id         String   @id @default(uuid())
+  name       String
+  created_at DateTime @default(now())
+  
+  users      User[]
+  surveys    Survey[]
+  auditLogs  AuditLog[]
+}
+
+model Role {
+  id          String   @id @default(uuid())
+  name        String
+  is_global   Boolean  @default(false)
+  created_at  DateTime @default(now())
+
+  users       User[]
+  permissions RolePermission[]
+}
+
+model Permission {
+  id       String @id
+  key      String
+  label    String
+  category String
+
+  roles    RolePermission[]
+}
+
+model RolePermission {
+  role_id       String
+  permission_id String
+  
+  role       Role       @relation(fields: [role_id], references: [id], onDelete: Cascade)
+  permission Permission @relation(fields: [permission_id], references: [id], onDelete: Cascade)
+  
+  @@id([role_id, permission_id])
 }
 
 model User {
-  id        Int      @id @default(autoincrement())
-  name      String
-  email     String   @unique
-  createdAt DateTime @default(now())
+  id            String   @id @default(uuid())
+  name          String
+  email         String   @unique
+  role_id       String
+  department_id String
+  
+  role       Role       @relation(fields: [role_id], references: [id])
+  department Department @relation(fields: [department_id], references: [id])
+  
+  auditLogs  AuditLog[]
+}
+
+model Survey {
+  id            String   @id @default(uuid())
+  title         String
+  description   String?
+  status        String   
+  department_id String
+  created_by    String
+  created_at    DateTime @default(now())
+
+  department Department      @relation(fields: [department_id], references: [id])
+  sections   SurveySection[]
+  responses  SurveyResponse[]
+}
+
+model SurveySection {
+  id            String   @id @default(uuid())
+  survey_id     String
+  title         String
+  section_order Int
+
+  survey    Survey           @relation(fields: [survey_id], references: [id], onDelete: Cascade)
+  questions SurveyQuestion[]
+}
+
+model QuestionType {
+  id            String   @id
+  key           String
+  label         String
+  config_schema String   
+
+  questions SurveyQuestion[]
+}
+
+model SurveyQuestion {
+  id             String   @id @default(uuid())
+  section_id     String
+  type_id        String
+  label          String
+  required       Boolean  @default(false)
+  question_order Int
+  config         String   
+
+  section  SurveySection   @relation(fields: [section_id], references: [id], onDelete: Cascade)
+  type     QuestionType    @relation(fields: [type_id], references: [id])
+  answers  ResponseAnswer[]
+}
+
+model SurveyResponse {
+  id           String   @id @default(uuid())
+  survey_id    String
+  submitted_at DateTime @default(now())
+  metadata     String?  
+
+  survey  Survey           @relation(fields: [survey_id], references: [id], onDelete: Cascade)
+  answers ResponseAnswer[]
+}
+
+model ResponseAnswer {
+  id          String   @id @default(uuid())
+  response_id String
+  question_id String
+  value       String   
+
+  response SurveyResponse @relation(fields: [response_id], references: [id], onDelete: Cascade)
+  question SurveyQuestion @relation(fields: [question_id], references: [id], onDelete: Cascade)
+}
+
+model AuditLog {
+  id                 String   @id @default(uuid())
+  timestamp          DateTime @default(now())
+  user_id            String
+  action_description String
+  category           String
+  ip_address         String
+  department_id      String   
+
+  user       User       @relation(fields: [user_id], references: [id])
+  department Department @relation(fields: [department_id], references: [id])
 }
