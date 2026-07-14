@@ -10,16 +10,20 @@ export function Topbar({ title }: TopbarProps) {
       <div className="flex items-center gap-6">
         <h1 className="text-xl font-semibold text-gray-800">{title}</h1>
         
-        {/* OmniCSAT specific system info */}
+        {/* Big Outsource CSAT specific system info */}
         <div className="hidden lg:flex items-center gap-4 text-xs">
           <div className="flex items-center gap-1.5 text-blue-600 font-semibold bg-blue-50 px-2 py-1 rounded-md">
             <ShieldCheck className="w-4 h-4" />
             SUPER ADMIN ACTIVE
           </div>
-          <span className="text-gray-500 flex items-center gap-1">
-            <span className="w-4 h-4 rounded-full border border-gray-300 flex items-center justify-center text-[10px]">i</span>
-            Full System Permissions: can view all departments, edit personnel, edit survey rules.
-          </span>
+          <div className="flex items-center gap-1.5 group cursor-help">
+            <span className="w-4 h-4 rounded-full border border-gray-300 flex items-center justify-center text-[10px] text-gray-400 group-hover:text-gray-600 group-hover:border-gray-400 transition-colors select-none">
+              i
+            </span>
+            <span className="text-gray-500 text-xs transition-all duration-300 ease-out opacity-0 max-w-0 overflow-hidden whitespace-nowrap group-hover:opacity-100 group-hover:max-w-[500px]">
+              Full System Permissions: can view all departments, edit personnel, edit survey rules.
+            </span>
+          </div>
         </div>
       </div>
 

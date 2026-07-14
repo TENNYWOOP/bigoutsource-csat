@@ -4,6 +4,7 @@ import { Dashboard } from './pages/Dashboard';
 import { Ratings } from './pages/Ratings';
 import { Surveys } from './pages/Surveys';
 import { Personnel } from './pages/Personnel';
+import { AuditLogs } from './pages/AuditLogs';
 import { Settings } from './pages/Settings';
 
 function App() {
@@ -15,6 +16,7 @@ function App() {
           <Route path="ratings" element={<Ratings />} />
           <Route path="surveys" element={<Surveys />} />
           <Route path="personnel" element={<Personnel />} />
+          <Route path="audit-logs" element={<AuditLogs />} />
           <Route path="settings" element={<Settings />} />
         </Route>
       </Routes>
