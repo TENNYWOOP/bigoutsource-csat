@@ -18,7 +18,7 @@ async function main() {
   console.log('Seeding database...');
 
   // Departments (Skipped for clean db)
-  
+
   // Roles
   const roleSuperAdmin = await prisma.role.create({
     data: { name: 'SUPER ADMIN', is_global: true }
@@ -35,7 +35,7 @@ async function main() {
   // Users
   const userAdmin = await prisma.user.create({
     data: {
-      name: 'Sarah Vance', 
+      name: 'Sarah Vance',
       email: 'superadmin@bigoutsource.com',
       role_id: roleSuperAdmin.id
     }
