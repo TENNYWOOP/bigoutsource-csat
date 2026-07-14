@@ -13,7 +13,7 @@ services:
     volumes:
       - ./backend:/usr/src/app
       - /usr/src/app/node_modules
-    command: npm run dev
+    command: sh -c "npx prisma generate && npm run dev"
 
   frontend:
     build:
