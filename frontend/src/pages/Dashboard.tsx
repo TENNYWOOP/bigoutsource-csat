@@ -1,4 +1,4 @@
-import { Users, CheckCircle, BarChart3, Settings2, Star, ArrowRight } from 'lucide-react';
+import { Users, CheckCircle, Star, ArrowRight } from 'lucide-react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { useEffect, useState } from 'react';
 import { api } from '../lib/api';

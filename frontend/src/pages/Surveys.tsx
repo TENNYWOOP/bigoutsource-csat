@@ -421,7 +421,7 @@ export function Surveys() {
 
             <div className="space-y-6">
               <div className="bg-white rounded-2xl border border-gray-200 shadow-sm relative overflow-hidden">
-                <div className="absolute top-0 left-0 right-0 h-2.5 bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500"></div>
+                <div className="absolute top-0 left-0 right-0 h-2.5 bg-gradient-to-r from-blue-600 via-indigo-500 to-cyan-500"></div>
                 <div className="p-8">
                   <input type="text" placeholder="Survey Title" value={surveyTitle} onChange={e => setSurveyTitle(e.target.value)} className="w-full text-3xl font-bold text-gray-900 border-b border-transparent focus:border-indigo-600 focus:outline-none pb-2 transition-all" />
                   <input type="text" placeholder="Form description (optional)" value={surveyDesc} onChange={e => setSurveyDesc(e.target.value)} className="w-full text-sm text-gray-500 border-b border-transparent focus:border-indigo-600 focus:outline-none mt-4 pb-1 transition-all" />
@@ -451,7 +451,6 @@ export function Surveys() {
                   
                   {questions.filter(q => q.section_id === section.id).map(question => {
                     const isActive = activeQuestionId === question.id;
-                    const qType = questionTypes.find(t => t.id === question.type_id);
                     
                     return (
                       <div key={question.id} onClick={() => setActiveQuestionId(question.id)} className={cn("bg-white rounded-xl border transition-all shadow-sm overflow-hidden cursor-pointer", isActive ? "border-indigo-600 ring-1 ring-indigo-500/10" : "border-gray-200")}>

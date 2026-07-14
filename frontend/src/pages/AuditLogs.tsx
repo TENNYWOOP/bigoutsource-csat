@@ -1,4 +1,4 @@
-import { Search, History, ShieldAlert, Users, Terminal, CheckCircle2, AlertTriangle, Eye } from 'lucide-react';
+import { Search, History, Eye } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { api } from '../lib/api';
 
