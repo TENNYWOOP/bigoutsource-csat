@@ -37,7 +37,7 @@ async function main() {
     data: {
       name: 'Sarah Vance', 
       email: 'superadmin@bigoutsource.com',
-      role_id: roleSuperAdmin.id
+      role: { connect: { id: roleSuperAdmin.id } }
     }
   });
 
