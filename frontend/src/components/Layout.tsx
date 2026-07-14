@@ -7,6 +7,7 @@ const routeTitles: Record<string, string> = {
   '/ratings': 'Ratings',
   '/surveys': 'Survey Campaigns',
   '/personnel': 'Personnel Directory',
+  '/audit-logs': 'System Audit Logs',
   '/settings': 'Administrative Settings',
 };
 

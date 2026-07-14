@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { Search, ArrowRight, Star } from 'lucide-react';
 import { cn } from '../lib/utils';
 
@@ -13,25 +14,38 @@ const ratings = [
 ];
 
 export function Ratings() {
+  const [visibleFields, setVisibleFields] = useState<Record<string, boolean>>({
+    Date: true,
+    Ticket: false,
+    Personnel: true,
+    Average: true,
+  });
+
   return (
     <div className="flex gap-6 h-full">
       {/* Left Filters - EIMS style */}
       <div className="w-64 bg-white rounded-xl shadow-sm border border-gray-100 p-4 h-fit hidden xl:block">
         <div className="flex justify-between items-center mb-4">
           <h3 className="text-xs font-bold text-gray-500 uppercase tracking-wider">Table View</h3>
-          <button className="text-xs text-blue-600 font-semibold bg-blue-50 px-2 py-0.5 rounded">Reset</button>
+          <button 
+            onClick={() => setVisibleFields({ Date: true, Ticket: true, Personnel: true, Average: true })}
+            className="text-xs text-blue-600 font-semibold bg-blue-50 px-2 py-0.5 rounded"
+          >
+            Reset
+          </button>
         </div>
         <p className="text-sm text-gray-600 font-medium mb-4">Default fields shown</p>
         
         <div className="space-y-3">
-          {['Date', 'Ticket', 'Personnel', 'Average'].map((filter, i) => (
+          {['Date', 'Ticket', 'Personnel', 'Average'].map((filter) => (
             <label key={filter} className="flex items-center gap-3">
               <input 
                 type="checkbox" 
-                defaultChecked={i !== 1} // just to show some unchecked
-                className="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500" 
+                checked={visibleFields[filter]}
+                onChange={(e) => setVisibleFields(prev => ({ ...prev, [filter]: e.target.checked }))}
+                className="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500 cursor-pointer" 
               />
-              <span className="text-sm font-medium text-gray-700">{filter}</span>
+              <span className="text-sm font-medium text-gray-700 select-none cursor-pointer">{filter}</span>
             </label>
           ))}
         </div>
@@ -58,10 +72,18 @@ export function Ratings() {
           <table className="w-full text-left border-collapse">
             <thead>
               <tr className="border-b border-gray-100">
-                <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">Name Date</th>
-                <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">Ticket</th>
-                <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">Personnel</th>
-                <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider text-right">Average Score</th>
+                <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                  {visibleFields.Date ? "Name Date" : "Name"}
+                </th>
+                {visibleFields.Ticket && (
+                  <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">Ticket</th>
+                )}
+                {visibleFields.Personnel && (
+                  <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">Personnel</th>
+                )}
+                {visibleFields.Average && (
+                  <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider text-right">Average Score</th>
+                )}
                 <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider text-center">Action</th>
               </tr>
             </thead>
@@ -75,16 +97,22 @@ export function Ratings() {
                         <span className="text-[10px] font-bold bg-orange-100 text-orange-700 px-1.5 py-0.5 rounded uppercase">{row.badge}</span>
                       )}
                     </div>
-                    <div className="text-xs text-gray-500 mt-0.5">{row.date}</div>
+                    {visibleFields.Date && <div className="text-xs text-gray-500 mt-0.5">{row.date}</div>}
                   </td>
-                  <td className="px-6 py-4 text-sm font-medium text-gray-500">{row.ticket}</td>
-                  <td className="px-6 py-4 text-sm text-gray-900">{row.personnel}</td>
-                  <td className="px-6 py-4 text-right">
-                    <div className="flex items-center justify-end gap-1">
-                      <span className="font-bold text-gray-900">{row.score.toFixed(1)}</span>
-                      <Star className="w-4 h-4 fill-yellow-400 text-yellow-400" />
-                    </div>
-                  </td>
+                  {visibleFields.Ticket && (
+                    <td className="px-6 py-4 text-sm font-medium text-gray-500">{row.ticket}</td>
+                  )}
+                  {visibleFields.Personnel && (
+                    <td className="px-6 py-4 text-sm text-gray-900">{row.personnel}</td>
+                  )}
+                  {visibleFields.Average && (
+                    <td className="px-6 py-4 text-right">
+                      <div className="flex items-center justify-end gap-1">
+                        <span className="font-bold text-gray-900">{row.score.toFixed(1)}</span>
+                        <Star className="w-4 h-4 fill-yellow-400 text-yellow-400" />
+                      </div>
+                    </td>
+                  )}
                   <td className="px-6 py-4 text-center">
                     <button className={cn(
                       "w-8 h-8 rounded-full flex items-center justify-center mx-auto transition-colors",
@@ -107,45 +135,8 @@ export function Ratings() {
 
       {/* Right Context Panels */}
       <div className="w-[320px] hidden lg:flex flex-col gap-6">
-        <div className="bg-[#111827] rounded-xl p-6 text-white shadow-lg relative overflow-hidden">
-          <div className="absolute top-0 right-0 w-32 h-32 bg-blue-500/10 rounded-full blur-2xl -mr-10 -mt-10"></div>
-          <div className="flex items-center gap-2 mb-4">
-            <ShieldCheck className="w-5 h-5 text-blue-400" />
-            <h3 className="font-bold tracking-wide text-sm">SUPER ADMIN CONTEXT</h3>
-          </div>
-          <p className="text-blue-100 text-sm mb-6">"Super Admin sees all Departments."</p>
-          
-          <div className="pt-4 border-t border-white/10">
-            <h4 className="text-xs font-bold text-blue-300 uppercase tracking-wider mb-2">Original Sketch Annotation</h4>
-            <p className="text-xs text-gray-400 leading-relaxed">
-              Translating pencil sketch diagram into production dashboard widgets. The table represents unified response ledger controls.
-            </p>
-          </div>
-        </div>
-
-        <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 text-center">
-          <div className="flex items-center justify-center gap-2 text-blue-600 font-bold text-sm mb-6 uppercase tracking-wider">
-            <Settings2 className="w-4 h-4" /> Mockup Interactive Actions
-          </div>
-          <button className="w-full py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-semibold text-sm transition-colors flex items-center justify-center gap-2 shadow-md shadow-blue-200">
-            <PlusCircle className="w-4 h-4" /> Simulate Customer Feed
-          </button>
-          <p className="text-xs text-gray-400 mt-4 leading-relaxed px-2">
-            Clicking will insert simulated live ratings into the table above with assignees. Use column toggles in the sidebar to filter.
-          </p>
-        </div>
+        {/* Left blank for now */}
       </div>
     </div>
   );
-}
-
-// Simple icons mapped locally for imports
-function ShieldCheck(props: any) {
-  return <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2-1 4-2 7-2 2.89 0 5.09 1.14 7 2a1 1 0 0 1 1 1v7z"/><path d="m9 12 2 2 4-4"/></svg>;
-}
-function Settings2(props: any) {
-  return <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 7h-9"/><path d="M14 17H5"/><circle cx="17" cy="17" r="3"/><circle cx="7" cy="7" r="3"/></svg>;
-}
-function PlusCircle(props: any) {
-  return <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><path d="M8 12h8"/><path d="M12 8v8"/></svg>;
 }

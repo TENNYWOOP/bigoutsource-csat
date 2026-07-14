@@ -7,7 +7,7 @@ import {
   Settings,
   LogOut,
   ChevronLeft,
-  CircleDot
+  History
 } from 'lucide-react';
 import { cn } from '../lib/utils';
 
@@ -16,6 +16,7 @@ const navItems = [
   { name: 'Ratings', path: '/ratings', icon: Star },
   { name: 'Surveys', path: '/surveys', icon: ClipboardList },
   { name: 'Personnel', path: '/personnel', icon: Users },
+  { name: 'Audit Logs', path: '/audit-logs', icon: History },
   { name: 'Settings', path: '/settings', icon: Settings },
 ];
 
@@ -27,10 +28,8 @@ export function Sidebar() {
       {/* Logo Area */}
       <div className="h-16 flex items-center px-6 border-b border-transparent mb-4 mt-2">
         <div className="flex items-center gap-3">
-          <div className="w-8 h-8 bg-[#2563EB] rounded-full flex items-center justify-center text-white">
-            <CircleDot className="w-5 h-5" />
-          </div>
-          <span className="font-bold text-gray-900 text-lg tracking-tight">OmniCSAT</span>
+          <img src="/logo-only-bigoutsource.svg" alt="Big Outsource CSAT Logo" className="w-8 h-8 object-contain" />
+          <span className="font-bold text-gray-900 text-lg tracking-tight">Big Outsource CSAT</span>
         </div>
       </div>
 

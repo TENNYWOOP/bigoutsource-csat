@@ -2,11 +2,11 @@ import { Search, UserPlus, Edit2, Trash2, Check, X } from 'lucide-react';
 import { cn } from '../lib/utils';
 
 const personnel = [
-  { id: 'p-1', initials: 'DM', name: 'David Miller', role: 'CS Support Lead', dept: 'Support', email: 'dmiller@omnicsat.co', status: 'Active' },
-  { id: 'p-2', initials: 'SV', name: 'Sarah Vance', role: 'Director of Customer Experience', dept: 'Product', email: 'svance@omnicsat.co', status: 'Active' },
-  { id: 'p-3', initials: 'EH', name: 'Ethan Hunt', role: 'Lead Systems Architect', dept: 'Engineering', email: 'ehunt@omnicsat.co', status: 'Active' },
-  { id: 'p-4', initials: 'DP', name: 'Diana Prince', role: 'Enterprise Accounts Lead', dept: 'Sales', email: 'dprince@omnicsat.co', status: 'Active' },
-  { id: 'p-5', initials: 'TS', name: 'Tony Stark', role: 'Solutions Onboarding Manager', dept: 'Sales', email: 'tstark@omnicsat.co', status: 'Inactive' },
+  { id: 'p-1', initials: 'DM', name: 'David Miller', role: 'CS Support Lead', dept: 'Support', email: 'dmiller@bigoutsource.com', status: 'Active' },
+  { id: 'p-2', initials: 'SV', name: 'Sarah Vance', role: 'Director of Customer Experience', dept: 'Product', email: 'svance@bigoutsource.com', status: 'Active' },
+  { id: 'p-3', initials: 'EH', name: 'Ethan Hunt', role: 'Lead Systems Architect', dept: 'Engineering', email: 'ehunt@bigoutsource.com', status: 'Active' },
+  { id: 'p-4', initials: 'DP', name: 'Diana Prince', role: 'Enterprise Accounts Lead', dept: 'Sales', email: 'dprince@bigoutsource.com', status: 'Active' },
+  { id: 'p-5', initials: 'TS', name: 'Tony Stark', role: 'Solutions Onboarding Manager', dept: 'Sales', email: 'tstark@bigoutsource.com', status: 'Inactive' },
 ];
 
 export function Personnel() {
