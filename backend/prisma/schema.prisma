@@ -20,31 +20,11 @@ model Department {
 
 model Role {
   id          String   @id @default(uuid())
-  name        String
+  name        String   @unique
   is_global   Boolean  @default(false)
   created_at  DateTime @default(now())
 
   users       User[]
-  permissions RolePermission[]
-}
-
-model Permission {
-  id       String @id
-  key      String
-  label    String
-  category String
-
-  roles    RolePermission[]
-}
-
-model RolePermission {
-  role_id       String
-  permission_id String
-  
-  role       Role       @relation(fields: [role_id], references: [id], onDelete: Cascade)
-  permission Permission @relation(fields: [permission_id], references: [id], onDelete: Cascade)
-  
-  @@id([role_id, permission_id])
 }
 
 model User {
@@ -52,10 +32,10 @@ model User {
   name          String
   email         String   @unique
   role_id       String
-  department_id String
+  department_id String?
   
   role       Role       @relation(fields: [role_id], references: [id])
-  department Department @relation(fields: [department_id], references: [id])
+  department Department? @relation(fields: [department_id], references: [id])
   
   auditLogs  AuditLog[]
 }
@@ -134,8 +114,8 @@ model AuditLog {
   action_description String
   category           String
   ip_address         String
-  department_id      String   
+  department_id      String?   
 
   user       User       @relation(fields: [user_id], references: [id])
-  department Department @relation(fields: [department_id], references: [id])
+  department Department? @relation(fields: [department_id], references: [id])
 }

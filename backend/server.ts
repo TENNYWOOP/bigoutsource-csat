@@ -18,16 +18,12 @@ app.use(async (req, res, next) => {
   try {
     // For our prototype, the client sends "Bearer user_email"
     const email = authHeader.split(' ')[1];
+    if (!email) return next();
+    
     const user = await prisma.user.findUnique({
       where: { email },
       include: { 
-        role: { 
-          include: { 
-            permissions: { 
-              include: { permission: true } 
-            } 
-          } 
-        }, 
+        role: true, 
         department: true 
       }
     });
@@ -48,24 +44,23 @@ const requireAuth = (req: any, res: any, next: any) => {
   next();
 };
 
-const requirePermission = (permissionKey: string) => {
+const requireRole = (allowedRoles: string[]) => {
   return (req: any, res: any, next: any) => {
     if (!req.user) return res.status(401).json({ error: 'Unauthorized' });
     
-    const perms = req.user.role?.permissions?.map((p: any) => p.permission.key) || [];
-    if (!perms.includes(permissionKey)) {
-      return res.status(403).json({ error: `Forbidden: Requires ${permissionKey}` });
+    if (!allowedRoles.includes(req.user.role.name)) {
+      return res.status(403).json({ error: `Forbidden: Requires one of [${allowedRoles.join(', ')}]` });
     }
     next();
   };
 };
 
-async function logAudit(userId: string, departmentId: string, action: string, category: string, ip: string) {
+async function logAudit(userId: string, departmentId: string | null | undefined, action: string, category: string, ip: string) {
   try {
     await prisma.auditLog.create({
       data: {
         user_id: userId,
-        department_id: departmentId,
+        department_id: departmentId || null, // Optional department ID
         action_description: action,
         category,
         ip_address: ip
@@ -84,13 +79,7 @@ app.post('/api/auth/login', async (req, res) => {
   const user = await prisma.user.findUnique({
     where: { email },
     include: { 
-      role: { 
-        include: { 
-          permissions: { 
-            include: { permission: true } 
-          } 
-        } 
-      }, 
+      role: true, 
       department: true 
     }
   });
@@ -112,17 +101,28 @@ app.get('/api/departments', async (req, res) => {
   res.json(departments);
 });
 
-app.post('/api/departments', requirePermission('manage_departments'), async (req: any, res) => {
+app.post('/api/departments', requireRole(['SUPER ADMIN']), async (req: any, res: any) => {
   const { name } = req.body;
   const dept = await prisma.department.create({ data: { name } });
   await logAudit(req.user.id, dept.id, `Created department: ${name}`, 'Settings', req.ip);
   res.json(dept);
 });
 
+app.delete('/api/departments/:id', requireRole(['SUPER ADMIN']), async (req: any, res: any) => {
+  const { id } = req.params;
+  try {
+    const dept = await prisma.department.delete({ where: { id } });
+    await logAudit(req.user.id, dept.id, `Deleted department: ${dept.name}`, 'Settings', req.ip);
+    res.json({ success: true });
+  } catch (error) {
+    res.status(400).json({ error: 'Cannot delete department with existing users or surveys' });
+  }
+});
+
 // ----------------------------------------------------
 // PERSONNEL
 // ----------------------------------------------------
-app.get('/api/personnel', requirePermission('view_personnel'), async (req: any, res) => {
+app.get('/api/personnel', requireRole(['SUPER ADMIN', 'DEPARTMENT ADMIN']), async (req: any, res: any) => {
   let where = {};
   // Managers only see their own department
   if (!req.user.role.is_global) {
@@ -136,7 +136,7 @@ app.get('/api/personnel', requirePermission('view_personnel'), async (req: any, 
   res.json(personnel);
 });
 
-app.post('/api/personnel', requirePermission('manage_personnel'), async (req: any, res) => {
+app.post('/api/personnel', requireRole(['SUPER ADMIN', 'DEPARTMENT ADMIN']), async (req: any, res: any) => {
   const { name, email, role_id, department_id } = req.body;
   
   if (!req.user.role.is_global && department_id !== req.user.department_id) {
@@ -151,43 +151,9 @@ app.post('/api/personnel', requirePermission('manage_personnel'), async (req: an
   res.json(user);
 });
 
-// ----------------------------------------------------
-// ROLES
-// ----------------------------------------------------
-app.get('/api/roles', requireAuth, async (req, res) => {
-  const roles = await prisma.role.findMany({
-    include: {
-      permissions: {
-        include: { permission: true }
-      }
-    }
-  });
+app.get('/api/roles', requireAuth, async (req: any, res: any) => {
+  const roles = await prisma.role.findMany();
   res.json(roles);
-});
-
-app.post('/api/roles', requirePermission('manage_roles'), async (req: any, res) => {
-  const { name, permissions } = req.body;
-  // Create role and assign permissions
-  const role = await prisma.role.create({
-    data: { name, is_global: false }
-  });
-  
-  for (const permKey of permissions) {
-    const perm = await prisma.permission.findFirst({ where: { key: permKey } });
-    if (perm) {
-      await prisma.rolePermission.create({
-        data: { role_id: role.id, permission_id: perm.id }
-      });
-    }
-  }
-  
-  await logAudit(req.user.id, req.user.department_id, `Created role: ${name}`, 'Security', req.ip);
-  res.json(role);
-});
-
-app.get('/api/permissions', requireAuth, async (req: any, res) => {
-  const perms = await prisma.permission.findMany();
-  res.json(perms);
 });
 
 // ----------------------------------------------------
@@ -198,7 +164,7 @@ app.get('/api/question-types', async (req, res) => {
   res.json(types);
 });
 
-app.get('/api/surveys', requirePermission('view_surveys'), async (req: any, res) => {
+app.get('/api/surveys', requireRole(['SUPER ADMIN', 'DEPARTMENT ADMIN', 'PERSONNEL']), async (req: any, res: any) => {
   let where = {};
   if (!req.user.role.is_global) {
     where = { department_id: req.user.department_id };
@@ -215,7 +181,7 @@ app.get('/api/surveys', requirePermission('view_surveys'), async (req: any, res)
   res.json(surveys);
 });
 
-app.post('/api/surveys', requirePermission('manage_surveys'), async (req: any, res) => {
+app.post('/api/surveys', requireRole(['SUPER ADMIN', 'DEPARTMENT ADMIN']), async (req: any, res: any) => {
   const { title, description, status, department_id, sections } = req.body;
 
   if (!req.user.role.is_global && department_id !== req.user.department_id) {
@@ -247,7 +213,7 @@ app.post('/api/surveys', requirePermission('manage_surveys'), async (req: any, r
   res.json(survey);
 });
 
-app.put('/api/surveys/:id', requirePermission('manage_surveys'), async (req: any, res) => {
+app.put('/api/surveys/:id', requireRole(['SUPER ADMIN', 'DEPARTMENT ADMIN']), async (req: any, res: any) => {
   const { id } = req.params;
   const { title, description, status, department_id, sections } = req.body;
 
@@ -323,7 +289,7 @@ app.post('/api/surveys/:id/responses', async (req, res) => {
   res.json(response);
 });
 
-app.get('/api/surveys/:id/responses', requirePermission('view_surveys'), async (req: any, res) => {
+app.get('/api/surveys/:id/responses', requireRole(['SUPER ADMIN', 'DEPARTMENT ADMIN', 'PERSONNEL']), async (req: any, res: any) => {
   const { id } = req.params;
   
   const survey = await prisma.survey.findUnique({ where: { id } });
@@ -344,7 +310,7 @@ app.get('/api/surveys/:id/responses', requirePermission('view_surveys'), async (
 // ----------------------------------------------------
 // AUDIT LOGS
 // ----------------------------------------------------
-app.get('/api/audit-logs', requirePermission('view_audit_logs'), async (req: any, res) => {
+app.get('/api/audit-logs', requireRole(['SUPER ADMIN', 'DEPARTMENT ADMIN']), async (req: any, res: any) => {
   let where = {};
   if (!req.user.role.is_global) {
     where = { department_id: req.user.department_id };

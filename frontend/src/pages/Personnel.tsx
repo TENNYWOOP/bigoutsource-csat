@@ -1,28 +1,29 @@
-import { Search, UserPlus, Edit2, Trash2, Building, Shield, X } from 'lucide-react';
+import { Search, UserPlus, Edit2, Trash2, Building, X } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { api } from '../lib/api';
 import { useAuth } from '../lib/auth';
 
 export function Personnel() {
-  const { hasPermission } = useAuth();
+  const { user, canManage, isGlobal } = useAuth();
   const [personnel, setPersonnel] = useState<any[]>([]);
   const [departments, setDepartments] = useState<any[]>([]);
   const [roles, setRoles] = useState<any[]>([]);
-  const [permissions, setPermissions] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   
   const [selectedDept, setSelectedDept] = useState('All Departments');
   
   // Modals state
   const [showDeptModal, setShowDeptModal] = useState(false);
-  const [showRolesModal, setShowRolesModal] = useState(false);
+  const [showProvisionModal, setShowProvisionModal] = useState(false);
 
-  // New Role Form
-  const [newRoleName, setNewRoleName] = useState('');
-  const [selectedPerms, setSelectedPerms] = useState<string[]>([]);
-  
   // New Dept Form
   const [newDeptName, setNewDeptName] = useState('');
+
+  // Provision Form
+  const [provName, setProvName] = useState('');
+  const [provEmail, setProvEmail] = useState('');
+  const [provRoleId, setProvRoleId] = useState('');
+  const [provDeptId, setProvDeptId] = useState('');
 
   useEffect(() => {
     fetchData();
@@ -30,16 +31,14 @@ export function Personnel() {
 
   const fetchData = async () => {
     try {
-      const [pData, dData, rData, permData] = await Promise.all([
+      const [pData, dData, rData] = await Promise.all([
         api.get('/personnel'),
         api.get('/departments'),
-        hasPermission('manage_roles') ? api.get('/roles') : Promise.resolve([]),
-        hasPermission('manage_roles') ? api.get('/permissions') : Promise.resolve([])
+        api.get('/roles')
       ]);
       setPersonnel(pData);
       setDepartments(dData);
       setRoles(rData);
-      setPermissions(permData);
     } catch (err) {
       console.error(err);
     } finally {
@@ -58,32 +57,38 @@ export function Personnel() {
     }
   };
 
-  const handleCreateRole = async () => {
-    if (!newRoleName.trim()) return;
+  const handleDeleteDept = async (id: string) => {
+    if (!window.confirm('Are you sure you want to delete this department?')) return;
     try {
-      await api.post('/roles', { name: newRoleName, permissions: selectedPerms });
-      setNewRoleName('');
-      setSelectedPerms([]);
+      await api.delete(`/departments/${id}`);
       fetchData();
     } catch (e: any) {
       alert(e.message);
     }
   };
 
-  const togglePerm = (id: string) => {
-    setSelectedPerms(prev => prev.includes(id) ? prev.filter(p => p !== id) : [...prev, id]);
+  const handleProvision = async () => {
+    if (!provName || !provEmail || !provRoleId || !provDeptId) return alert('Fill all fields');
+    try {
+      await api.post('/personnel', {
+        name: provName,
+        email: provEmail,
+        role_id: provRoleId,
+        department_id: provDeptId
+      });
+      setShowProvisionModal(false);
+      setProvName('');
+      setProvEmail('');
+      fetchData();
+    } catch (e: any) {
+      alert(e.message);
+    }
   };
 
   const filteredPersonnel = personnel.filter(p => {
     if (selectedDept === 'All Departments') return true;
     return p.department?.name === selectedDept;
   });
-
-  const permsByCategory = permissions.reduce((acc: any, perm: any) => {
-    if (!acc[perm.category]) acc[perm.category] = [];
-    acc[perm.category].push(perm);
-    return acc;
-  }, {});
 
   return (
     <div className="h-full max-w-6xl mx-auto relative">
@@ -96,18 +101,13 @@ export function Personnel() {
         </div>
         
         <div className="flex items-center gap-2">
-          {hasPermission('manage_departments') && (
+          {isGlobal() && (
             <button onClick={() => setShowDeptModal(true)} className="flex items-center gap-2 bg-gray-100 hover:bg-gray-200 text-gray-900 px-5 py-2.5 rounded-lg text-sm font-semibold transition-colors border border-gray-200">
               <Building className="w-4 h-4" /> Departments
             </button>
           )}
-          {hasPermission('manage_roles') && (
-            <button onClick={() => setShowRolesModal(true)} className="flex items-center gap-2 bg-gray-100 hover:bg-gray-200 text-gray-900 px-5 py-2.5 rounded-lg text-sm font-semibold transition-colors border border-gray-200">
-              <Shield className="w-4 h-4" /> Roles & Permissions
-            </button>
-          )}
-          {hasPermission('manage_personnel') && (
-            <button className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-5 py-2.5 rounded-lg text-sm font-semibold transition-colors shadow-sm shadow-blue-200">
+          {canManage() && (
+            <button onClick={() => setShowProvisionModal(true)} className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-5 py-2.5 rounded-lg text-sm font-semibold transition-colors shadow-sm shadow-blue-200">
               <UserPlus className="w-4 h-4" /> Provision New Member
             </button>
           )}
@@ -157,7 +157,7 @@ export function Personnel() {
                   </td>
                   <td className="px-4 py-4">
                     <div className="font-bold text-gray-900 text-sm">{person.role?.name}</div>
-                    <div className="text-xs text-gray-500 mt-0.5">{person.department?.name}</div>
+                    <div className="text-xs text-gray-500 mt-0.5">{person.department?.name || 'Global Access'}</div>
                   </td>
                   <td className="px-4 py-4">
                     <div className="text-sm text-gray-500">{person.email}</div>
@@ -193,9 +193,14 @@ export function Personnel() {
             </div>
             <div className="flex-1 overflow-y-auto space-y-2">
               {departments.map(d => (
-                <div key={d.id} className="p-3 bg-gray-50 rounded border flex justify-between">
+                <div key={d.id} className="p-3 bg-gray-50 rounded border flex justify-between items-center group">
                   <span className="font-semibold text-sm">{d.name}</span>
-                  <span className="text-xs text-gray-400 font-mono">{d.id.split('-')[0]}</span>
+                  <button 
+                    onClick={() => handleDeleteDept(d.id)}
+                    className="text-gray-400 hover:text-red-600 opacity-0 group-hover:opacity-100 transition-opacity"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </button>
                 </div>
               ))}
             </div>
@@ -203,57 +208,43 @@ export function Personnel() {
         </div>
       )}
 
-      {/* Roles & Permissions Modal */}
-      {showRolesModal && (
+      {/* Provision Modal */}
+      {showProvisionModal && (
         <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center">
-          <div className="bg-white rounded-xl p-6 w-[800px] max-h-[90vh] flex flex-col">
-            <div className="flex justify-between items-center mb-6 border-b pb-4">
-              <h3 className="text-xl font-bold">Roles & Permissions</h3>
-              <button onClick={() => setShowRolesModal(false)}><X className="w-5 h-5 text-gray-500 hover:text-gray-900" /></button>
+          <div className="bg-white rounded-xl p-6 w-[400px] flex flex-col">
+            <div className="flex justify-between items-center mb-6">
+              <h3 className="text-xl font-bold">Provision New Member</h3>
+              <button onClick={() => setShowProvisionModal(false)}><X className="w-5 h-5 text-gray-500 hover:text-gray-900" /></button>
             </div>
             
-            <div className="flex gap-6 overflow-hidden flex-1">
-              {/* Existing Roles */}
-              <div className="w-1/3 border-r pr-6 overflow-y-auto space-y-2">
-                <h4 className="font-bold text-sm text-gray-500 uppercase tracking-wider mb-4">Existing Roles</h4>
-                {roles.map(r => (
-                  <div key={r.id} className="p-3 bg-gray-50 rounded border">
-                    <div className="font-semibold text-sm">{r.name} {r.is_global && <span className="text-[10px] text-blue-500 ml-1">(Global)</span>}</div>
-                    <div className="text-xs text-gray-400 mt-1">{r.permissions?.length || 0} Permissions</div>
-                  </div>
-                ))}
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-semibold mb-1">Name</label>
+                <input type="text" value={provName} onChange={e => setProvName(e.target.value)} className="w-full border rounded px-3 py-2 text-sm" />
               </div>
-
-              {/* Create New Role */}
-              <div className="flex-1 overflow-y-auto pr-2">
-                <h4 className="font-bold text-sm text-gray-500 uppercase tracking-wider mb-4">Create Custom Role</h4>
-                <div className="mb-6">
-                  <label className="block text-sm font-semibold mb-2">Role Name</label>
-                  <input type="text" value={newRoleName} onChange={e => setNewRoleName(e.target.value)} className="w-full border rounded px-3 py-2" placeholder="e.g. Content Editor" />
-                </div>
-                
-                <div className="space-y-6">
-                  {Object.entries(permsByCategory).map(([category, perms]: any) => (
-                    <div key={category}>
-                      <h5 className="font-bold text-gray-800 mb-2">{category}</h5>
-                      <div className="grid grid-cols-2 gap-3">
-                        {perms.map((p: any) => (
-                          <label key={p.id} className="flex items-center gap-2 cursor-pointer bg-gray-50 p-2 rounded border">
-                            <input type="checkbox" checked={selectedPerms.includes(p.key)} onChange={() => togglePerm(p.key)} className="rounded text-blue-600 focus:ring-blue-500" />
-                            <span className="text-sm font-medium">{p.label}</span>
-                          </label>
-                        ))}
-                      </div>
-                    </div>
+              <div>
+                <label className="block text-sm font-semibold mb-1">Email</label>
+                <input type="email" value={provEmail} onChange={e => setProvEmail(e.target.value)} className="w-full border rounded px-3 py-2 text-sm" />
+              </div>
+              <div>
+                <label className="block text-sm font-semibold mb-1">Role</label>
+                <select value={provRoleId} onChange={e => setProvRoleId(e.target.value)} className="w-full border rounded px-3 py-2 text-sm">
+                  <option value="">Select a role...</option>
+                  {roles.filter(r => r.name !== 'SUPER ADMIN').map(r => (
+                    <option key={r.id} value={r.id}>{r.name}</option>
                   ))}
-                </div>
-                
-                <div className="mt-8 flex justify-end">
-                  <button onClick={handleCreateRole} className="bg-gray-900 hover:bg-black text-white px-6 py-2.5 rounded-lg font-semibold shadow-md">
-                    Create Role
-                  </button>
-                </div>
+                </select>
               </div>
+              <div>
+                <label className="block text-sm font-semibold mb-1">Department</label>
+                <select value={provDeptId} onChange={e => setProvDeptId(e.target.value)} className="w-full border rounded px-3 py-2 text-sm" disabled={!isGlobal()}>
+                  <option value="">Select a department...</option>
+                  {departments.filter(d => isGlobal() || d.id === user?.department_id).map(d => (
+                    <option key={d.id} value={d.id}>{d.name}</option>
+                  ))}
+                </select>
+              </div>
+              <button onClick={handleProvision} className="w-full bg-blue-600 text-white font-semibold py-2 rounded mt-2 hover:bg-blue-700">Provision Member</button>
             </div>
           </div>
         </div>

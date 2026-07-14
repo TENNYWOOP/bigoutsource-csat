@@ -22,7 +22,7 @@ interface Section {
 }
 
 export function Surveys() {
-  const { hasPermission } = useAuth();
+  const { user, canManage } = useAuth();
   const [campaignsList, setCampaignsList] = useState<any[]>([]);
   const [departments, setDepartments] = useState<any[]>([]);
   const [questionTypes, setQuestionTypes] = useState<any[]>([]);
@@ -276,12 +276,12 @@ export function Surveys() {
               <div className="flex justify-between items-center">
                 <h3 className="text-lg font-bold text-gray-800">Survey Structure</h3>
                 <div className="flex gap-2">
-                  {viewingSurvey.status === 'DRAFT' && hasPermission('manage_surveys') && (
+                  {viewingSurvey.status === 'DRAFT' && canManage() && (
                     <button onClick={handleEditDraft} className="px-4 py-2 text-sm text-blue-600 bg-blue-50 hover:bg-blue-100 font-semibold rounded-lg flex items-center gap-2">
                       <Edit2 className="w-4 h-4" /> Edit Draft
                     </button>
                   )}
-                  {hasPermission('manage_surveys') && (
+                  {canManage() && (
                     <button onClick={() => setDeletingSurveyId(viewingSurvey.id)} className="px-4 py-2 text-sm text-red-600 bg-red-50 hover:bg-red-100 font-semibold rounded-lg flex items-center gap-2">
                       <Trash2 className="w-4 h-4" /> Delete Survey
                     </button>
@@ -352,7 +352,7 @@ export function Surveys() {
           <p className="text-gray-500 text-sm">Manage external customer response rules and survey layouts.</p>
         </div>
         
-        {hasPermission('manage_surveys') && (
+        {canManage() && (
           <button onClick={() => setIsCreating(true)} className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-5 py-2.5 rounded-lg text-sm font-semibold transition-colors shadow-sm cursor-pointer">
             <Plus className="w-4 h-4" /> Launch Survey Campaign
           </button>

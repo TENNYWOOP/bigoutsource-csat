@@ -3,7 +3,7 @@ import { ShieldCheck, Server } from 'lucide-react';
 import { useAuth } from '../lib/auth';
 
 export function Settings() {
-  const { user } = useAuth();
+  const { isGlobal } = useAuth();
   const [isDark, setIsDark] = useState(() => document.documentElement.classList.contains('dark'));
 
   const handleToggleTheme = () => {
@@ -22,7 +22,7 @@ export function Settings() {
     setIsDark(document.documentElement.classList.contains('dark'));
   }, []);
 
-  if (!user?.role?.is_global) {
+  if (!isGlobal()) {
     return (
       <div className="h-full flex items-center justify-center">
         <div className="text-center">
