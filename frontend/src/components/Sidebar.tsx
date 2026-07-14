@@ -1,7 +1,6 @@
 import { Link, useLocation } from 'react-router-dom';
 import { 
   LayoutDashboard, 
-  Star, 
   ClipboardList, 
   Users, 
   Settings,
@@ -14,14 +13,14 @@ import { cn } from '../lib/utils';
 
 export function Sidebar() {
   const location = useLocation();
-  const { user, logout, hasPermission } = useAuth();
+  const { user, logout, canManage, isGlobal } = useAuth();
 
   const navItems = [
     { name: 'Survey summary', path: '/', icon: LayoutDashboard },
-    ...(hasPermission('view_surveys') ? [{ name: 'Surveys', path: '/surveys', icon: ClipboardList }] : []),
-    ...(hasPermission('view_personnel') ? [{ name: 'Personnel', path: '/personnel', icon: Users }] : []),
-    ...(hasPermission('view_audit_logs') ? [{ name: 'Audit Logs', path: '/audit-logs', icon: History }] : []),
-    { name: 'Settings', path: '/settings', icon: Settings },
+    { name: 'Surveys', path: '/surveys', icon: ClipboardList },
+    ...(canManage() ? [{ name: 'Personnel', path: '/personnel', icon: Users }] : []),
+    ...(canManage() ? [{ name: 'Audit Logs', path: '/audit-logs', icon: History }] : []),
+    ...(isGlobal() ? [{ name: 'Settings', path: '/settings', icon: Settings }] : []),
   ];
 
   return (
