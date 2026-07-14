@@ -35,17 +35,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setUser(null);
   };
 
-  const hasPermission = (permissionKey: string) => {
+  const canManage = () => {
     if (!user) return false;
-    if (user.role?.is_global) return true; // Super Admins have all permissions
-    const perms = user.role?.permissions?.map((p: any) => p.permission.key) || [];
-    return perms.includes(permissionKey);
+    return ['SUPER ADMIN', 'DEPARTMENT ADMIN'].includes(user.role?.name);
+  };
+
+  const isGlobal = () => {
+    if (!user) return false;
+    return user.role?.is_global === true;
   };
 
   if (loading) return <div>Loading...</div>;
 
   return (
-    <AuthContext.Provider value={{ user, login, logout, hasPermission }}>
+    <AuthContext.Provider value={{ user, login, logout, canManage, isGlobal }}>
       {children}
     </AuthContext.Provider>
   );
