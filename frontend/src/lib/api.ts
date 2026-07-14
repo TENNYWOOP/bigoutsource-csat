@@ -1,6 +1,6 @@
 const API_URL = 'http://localhost:3001/api';
 
-function getAuthHeader() {
+function getAuthHeader(): Record<string, string> {
   const token = localStorage.getItem('token');
   return token ? { 'Authorization': `Bearer ${token}` } : {};
 }

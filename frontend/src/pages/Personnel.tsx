@@ -4,7 +4,7 @@ import { api } from '../lib/api';
 import { useAuth } from '../lib/auth';
 
 export function Personnel() {
-  const { user, hasPermission } = useAuth();
+  const { hasPermission } = useAuth();
   const [personnel, setPersonnel] = useState<any[]>([]);
   const [departments, setDepartments] = useState<any[]>([]);
   const [roles, setRoles] = useState<any[]>([]);

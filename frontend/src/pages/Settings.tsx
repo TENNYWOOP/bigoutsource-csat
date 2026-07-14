@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { ShieldCheck, Server, Bell } from 'lucide-react';
+import { ShieldCheck, Server } from 'lucide-react';
 import { useAuth } from '../lib/auth';
 
 export function Settings() {
