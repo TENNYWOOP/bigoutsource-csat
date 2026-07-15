@@ -99,6 +99,15 @@ html.dark button.bg-white {
   border-color: #334155 !important;
 }
 
+html.dark button.bg-gray-200 {
+  background-color: #1e293b !important;
+  color: #f1f5f9 !important;
+}
+
+html.dark button.hover\:bg-gray-300:hover {
+  background-color: #334155 !important;
+}
+
 html.dark button.bg-white:hover {
   background-color: #334155 !important;
 }
@@ -144,11 +153,17 @@ html.dark .bg-amber-50 {
   color: #fbbf24 !important; /* Amber 400 */
 }
 
+html.dark .bg-fuchsia-50 {
+  background-color: rgba(217, 70, 239, 0.15) !important; /* Fuchsia 500 with opacity */
+  color: #e879f9 !important; /* Fuchsia 400 */
+}
+
 /* Border adjustments for category badges in dark mode */
 html.dark .border-blue-100,
 html.dark .border-indigo-100,
 html.dark .border-teal-100,
 html.dark .border-amber-100,
-html.dark .border-red-100 {
+html.dark .border-red-100,
+html.dark .border-fuchsia-100 {
   border-color: rgba(51, 65, 85, 0.5) !important; /* Semi-transparent border */
 }

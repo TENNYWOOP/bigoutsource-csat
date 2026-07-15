@@ -1,10 +1,11 @@
-import { Search, History, Eye } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { Search, History, ArrowUpDown } from 'lucide-react';
+import { useEffect, useState, useMemo } from 'react';
 import { api } from '../lib/api';
 
 export function AuditLogs() {
   const [logs, setLogs] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [sortConfig, setSortConfig] = useState<{ key: string, direction: 'asc' | 'desc' } | null>(null);
 
   useEffect(() => {
     const fetchLogs = async () => {
@@ -19,6 +20,42 @@ export function AuditLogs() {
     };
     fetchLogs();
   }, []);
+
+  const sortedLogs = useMemo(() => {
+    if (!sortConfig) return logs;
+    return [...logs].sort((a, b) => {
+      let aVal = a[sortConfig.key];
+      let bVal = b[sortConfig.key];
+      
+      // Handle nested values
+      if (sortConfig.key === 'user') {
+        aVal = a.user?.name || '';
+        bVal = b.user?.name || '';
+      }
+      
+      // String comparisons
+      if (typeof aVal === 'string') aVal = aVal.toLowerCase();
+      if (typeof bVal === 'string') bVal = bVal.toLowerCase();
+
+      if (aVal < bVal) return sortConfig.direction === 'asc' ? -1 : 1;
+      if (aVal > bVal) return sortConfig.direction === 'asc' ? 1 : -1;
+      return 0;
+    });
+  }, [logs, sortConfig]);
+
+  const toggleSort = (key: string) => {
+    setSortConfig(prev => {
+      if (prev?.key === key) {
+        if (prev.direction === 'asc') return { key, direction: 'desc' };
+        return null;
+      }
+      return { key, direction: 'asc' };
+    });
+  };
+
+  const SortIcon = ({ columnKey }: { columnKey: string }) => (
+    <ArrowUpDown className={`w-3 h-3 ${sortConfig?.key === columnKey ? 'text-gray-900' : 'text-gray-400'}`} />
+  );
 
   return (
     <div className="h-full max-w-6xl mx-auto space-y-8 animate-in fade-in duration-200">
@@ -58,6 +95,7 @@ export function AuditLogs() {
               <option>Security</option>
               <option>Personnel</option>
               <option>Settings</option>
+              <option>Department</option>
             </select>
           </div>
         </div>
@@ -67,17 +105,23 @@ export function AuditLogs() {
           <table className="w-full text-left border-collapse">
             <thead>
               <tr className="border-b border-gray-100 bg-gray-50/50">
-                <th className="px-6 py-3.5 text-xs font-bold text-gray-500 uppercase tracking-wider">Timestamp</th>
-                <th className="px-6 py-3.5 text-xs font-bold text-gray-500 uppercase tracking-wider">User</th>
-                <th className="px-6 py-3.5 text-xs font-bold text-gray-500 uppercase tracking-wider">Action Event</th>
-                <th className="px-6 py-3.5 text-xs font-bold text-gray-500 uppercase tracking-wider">Category</th>
-                <th className="px-6 py-3.5 text-xs font-bold text-gray-500 uppercase tracking-wider">IP Address</th>
-                <th className="px-6 py-3.5 text-xs font-bold text-gray-500 uppercase tracking-wider text-center">Action</th>
+                <th className="px-6 py-3.5 text-xs font-bold text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 select-none" onClick={() => toggleSort('timestamp')}>
+                  <div className="flex items-center gap-2">Timestamp <SortIcon columnKey="timestamp" /></div>
+                </th>
+                <th className="px-6 py-3.5 text-xs font-bold text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 select-none" onClick={() => toggleSort('user')}>
+                  <div className="flex items-center gap-2">User <SortIcon columnKey="user" /></div>
+                </th>
+                <th className="px-6 py-3.5 text-xs font-bold text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 select-none" onClick={() => toggleSort('action_description')}>
+                  <div className="flex items-center gap-2">Action Event <SortIcon columnKey="action_description" /></div>
+                </th>
+                <th className="px-6 py-3.5 text-xs font-bold text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 select-none" onClick={() => toggleSort('category')}>
+                  <div className="flex items-center gap-2">Category <SortIcon columnKey="category" /></div>
+                </th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-50 text-sm">
-              {loading && <tr><td colSpan={6} className="text-center p-4">Loading...</td></tr>}
-              {!loading && logs.map((log) => (
+              {loading && <tr><td colSpan={4} className="text-center p-4">Loading...</td></tr>}
+              {!loading && sortedLogs.map((log) => (
                 <tr key={log.id} className="hover:bg-gray-50/50 transition-colors">
                   <td className="px-6 py-4 text-xs font-medium text-gray-500 whitespace-nowrap">
                     {new Date(log.timestamp).toLocaleString()}
@@ -102,18 +146,11 @@ export function AuditLogs() {
                       log.category === 'Branding' ? 'bg-blue-50 text-blue-600 border-blue-100' :
                       log.category === 'Surveys' ? 'bg-indigo-50 text-indigo-600 border-indigo-100' :
                       log.category === 'Personnel' ? 'bg-teal-50 text-teal-600 border-teal-100' :
+                      (log.category === 'Department' || log.category === 'DEPARTMENT') ? 'bg-fuchsia-50 text-fuchsia-600 border-fuchsia-100' :
                       'bg-amber-50 text-amber-600 border-amber-100'
                     }`}>
-                      {log.category}
+                      {log.category === 'DEPARTMENT' ? 'Department' : log.category}
                     </span>
-                  </td>
-                  <td className="px-6 py-4 text-xs font-mono text-gray-500">
-                    {log.ip_address}
-                  </td>
-                  <td className="px-6 py-4 text-center">
-                    <button className="w-8 h-8 rounded-full hover:bg-gray-100 flex items-center justify-center text-gray-400 hover:text-gray-600 transition-colors mx-auto cursor-pointer">
-                      <Eye className="w-4 h-4" />
-                    </button>
                   </td>
                 </tr>
               ))}

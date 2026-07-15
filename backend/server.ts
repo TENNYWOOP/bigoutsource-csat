@@ -102,9 +102,18 @@ app.get('/api/departments', async (req, res) => {
 });
 
 app.post('/api/departments', requireRole(['SUPER ADMIN']), async (req: any, res: any) => {
-  const { name } = req.body;
-  const dept = await prisma.department.create({ data: { name } });
-  await logAudit(req.user.id, dept.id, `Created department: ${name}`, 'Settings', req.ip);
+  const { name, code } = req.body;
+  
+  if (code && code.length > 3) return res.status(400).json({ error: 'Department code must be 3 characters or less' });
+
+  const existingName = await prisma.department.findFirst({ where: { name: { equals: name, mode: 'insensitive' } } });
+  if (existingName) return res.status(400).json({ error: 'A department with this name already exists' });
+  
+  const existingCode = await prisma.department.findFirst({ where: { code: { equals: code, mode: 'insensitive' } } });
+  if (existingCode) return res.status(400).json({ error: 'A department with this code already exists' });
+
+  const dept = await prisma.department.create({ data: { name, code } });
+  await logAudit(req.user.id, dept.id, `Created department: ${name} (${code})`, 'Department', req.ip);
   res.json(dept);
 });
 
@@ -112,7 +121,7 @@ app.delete('/api/departments/:id', requireRole(['SUPER ADMIN']), async (req: any
   const { id } = req.params;
   try {
     const dept = await prisma.department.delete({ where: { id } });
-    await logAudit(req.user.id, dept.id, `Deleted department: ${dept.name}`, 'Settings', req.ip);
+    await logAudit(req.user.id, dept.id, `Deleted department: ${dept.name}`, 'Department', req.ip);
     res.json({ success: true });
   } catch (error) {
     res.status(400).json({ error: 'Cannot delete department with existing users or surveys' });
@@ -137,14 +146,21 @@ app.get('/api/personnel', requireRole(['SUPER ADMIN', 'DEPARTMENT ADMIN']), asyn
 });
 
 app.post('/api/personnel', requireRole(['SUPER ADMIN', 'DEPARTMENT ADMIN']), async (req: any, res: any) => {
-  const { name, email, role_id, department_id } = req.body;
+  const { name, email, role_id, department_id, job_title } = req.body;
   
   if (!req.user.role.is_global && department_id !== req.user.department_id) {
     return res.status(403).json({ error: 'Cannot add personnel to other departments' });
   }
 
+  const roleToAssign = await prisma.role.findUnique({ where: { id: role_id } });
+  if (!roleToAssign) return res.status(400).json({ error: 'Invalid role' });
+  
+  if (!req.user.role.is_global && roleToAssign.name !== 'PERSONNEL') {
+    return res.status(403).json({ error: 'Department Admins can only provision Personnel roles' });
+  }
+
   const user = await prisma.user.create({
-    data: { name, email, role_id, department_id }
+    data: { name, email, role_id, department_id, job_title }
   });
   
   await logAudit(req.user.id, department_id, `Provisioned new member: ${name}`, 'Personnel', req.ip);
@@ -255,6 +271,22 @@ app.put('/api/surveys/:id', requireRole(['SUPER ADMIN', 'DEPARTMENT ADMIN']), as
   res.json(survey);
 });
 
+app.delete('/api/surveys/:id', requireRole(['SUPER ADMIN', 'DEPARTMENT ADMIN']), async (req: any, res: any) => {
+  const { id } = req.params;
+  const existing = await prisma.survey.findUnique({ where: { id } });
+  if (!existing) return res.status(404).json({ error: 'Survey not found' });
+  
+  if (!req.user.role.is_global) {
+    if (existing.department_id !== req.user.department_id) {
+      return res.status(403).json({ error: 'Cannot delete survey for other departments' });
+    }
+  }
+
+  await prisma.survey.delete({ where: { id } });
+  await logAudit(req.user.id, existing.department_id, `Deleted Survey: "${existing.title}"`, 'Surveys', req.ip);
+  res.json({ success: true });
+});
+
 app.get('/api/surveys/:id', async (req, res) => {
   const survey = await prisma.survey.findUnique({
     where: { id: req.params.id },
@@ -329,9 +361,12 @@ app.get('/api/audit-logs', requireRole(['SUPER ADMIN', 'DEPARTMENT ADMIN']), asy
 // DASHBOARD ANALYTICS
 // ----------------------------------------------------
 app.get('/api/analytics', requireAuth, async (req: any, res) => {
-  let deptWhere = {};
+  let deptWhere: any = {};
+  
   if (!req.user.role.is_global) {
     deptWhere = { department_id: req.user.department_id };
+  } else if (req.query.departmentId && req.query.departmentId !== 'all') {
+    deptWhere = { department_id: String(req.query.departmentId) };
   }
 
   const surveys = await prisma.survey.findMany({ where: deptWhere, select: { id: true } });

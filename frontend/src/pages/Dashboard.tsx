@@ -1,23 +1,34 @@
-import { Users, CheckCircle, Star, ArrowRight } from 'lucide-react';
+import { Users, CheckCircle, Star, ArrowRight, Building } from 'lucide-react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { useEffect, useState } from 'react';
 import { api } from '../lib/api';
 import { cn } from '../lib/utils';
+import { useAuth } from '../lib/auth';
 
 export function Dashboard() {
+  const { isGlobal } = useAuth();
   const [stats, setStats] = useState<any>(null);
+  const [departments, setDepartments] = useState<any[]>([]);
+  const [selectedDept, setSelectedDept] = useState('all');
   
   useEffect(() => {
     const fetchStats = async () => {
       try {
-        const data = await api.get('/analytics');
+        const url = selectedDept === 'all' ? '/analytics' : `/analytics?departmentId=${selectedDept}`;
+        const data = await api.get(url);
         setStats(data);
       } catch (err) {
         console.error(err);
       }
     };
     fetchStats();
-  }, []);
+  }, [selectedDept]);
+
+  useEffect(() => {
+    if (isGlobal()) {
+      api.get('/departments').then(setDepartments).catch(console.error);
+    }
+  }, [isGlobal]);
 
   const chartData = stats?.chartData || [];
 
@@ -102,6 +113,25 @@ export function Dashboard() {
 
       {/* Right Column - Recent Ratings */}
       <div className="w-[380px] bg-white rounded-xl shadow-sm border border-gray-100 p-6 flex flex-col h-[calc(100vh-8rem)]">
+        
+        {isGlobal() && (
+          <div className="mb-6 pb-6 border-b border-gray-100">
+            <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2 flex items-center gap-1">
+              <Building className="w-3.5 h-3.5" /> Department Filter
+            </label>
+            <select 
+              value={selectedDept} 
+              onChange={e => setSelectedDept(e.target.value)}
+              className="w-full bg-gray-50 border border-gray-200 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block px-3 py-2.5 font-medium cursor-pointer transition-colors hover:border-gray-300 outline-none"
+            >
+              <option value="all">All Departments (Company Wide)</option>
+              {departments.map(d => (
+                <option key={d.id} value={d.id}>{d.name}</option>
+              ))}
+            </select>
+          </div>
+        )}
+
         <div className="flex justify-between items-center mb-6">
           <h3 className="text-lg font-bold text-gray-900">Recent Ratings</h3>
           <span className="text-xs font-semibold text-blue-600 bg-blue-50 px-2.5 py-1 rounded-full">{recentRatings.length} total</span>
