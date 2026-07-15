@@ -11,6 +11,11 @@ services:
       - "5432:5432"
     volumes:
       - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 3s
+      timeout: 3s
+      retries: 10
 
   backend:
     build:
@@ -24,7 +29,8 @@ services:
       - DATABASE_URL=postgresql://postgres:postgres@db:5432/csat_db?schema=public
     # Removed volume mounts for source code so we use the built image
     depends_on:
-      - db
+      db:
+        condition: service_healthy
     # Running db push in the command for the demo to auto-migrate the database
     command: sh -c "npx prisma generate && npx prisma db push --accept-data-loss && npm run start"
 
