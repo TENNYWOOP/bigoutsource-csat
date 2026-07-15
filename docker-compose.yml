@@ -39,7 +39,7 @@ services:
       context: ./frontend
       dockerfile: Dockerfile
     ports:
-      - "80:80" # Map host port 80 to Nginx port 80
+      - "5173:80" # Map host port 5173 to Nginx port 80
     environment:
       - NODE_ENV=production
       - DOMAIN_NAME=localhost 10.10.60.3
