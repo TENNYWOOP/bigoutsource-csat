@@ -22,7 +22,7 @@ interface Section {
 }
 
 export function Surveys() {
-  const { user, canManage } = useAuth();
+  const { canManage } = useAuth();
   const [campaignsList, setCampaignsList] = useState<any[]>([]);
   const [departments, setDepartments] = useState<any[]>([]);
   const [questionTypes, setQuestionTypes] = useState<any[]>([]);

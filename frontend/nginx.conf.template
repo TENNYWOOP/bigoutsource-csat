@@ -1,0 +1,28 @@
+# Catch-all server block to drop requests with unrecognized hostnames (e.g. IP addresses)
+server {
+    listen 80 default_server;
+    server_name _;
+    
+    # Return 444 (Connection Closed Without Response)
+    return 444;
+}
+
+# Main application server block
+server {
+    listen 80;
+    # Nginx will automatically replace ${DOMAIN_NAME} with the environment variable value
+    server_name ${DOMAIN_NAME};
+    
+    root /usr/share/nginx/html;
+    index index.html;
+
+    # Fallback to index.html for React Router
+    location / {
+        try_files $uri $uri/ /index.html;
+    }
+
+    # Proxy API requests directly from nginx to backend
+    location /api/ {
+        proxy_pass http://backend:3001/api/;
+    }
+}
