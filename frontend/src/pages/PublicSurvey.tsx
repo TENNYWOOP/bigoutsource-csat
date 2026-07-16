@@ -12,6 +12,7 @@ export function PublicSurvey() {
   const [loading, setLoading] = useState(true);
   const [submitted, setSubmitted] = useState(false);
   const [answers, setAnswers] = useState<Record<string, string>>({});
+  const [currentSectionIndex, setCurrentSectionIndex] = useState(0);
 
   useEffect(() => {
     const fetchSurvey = async () => {
@@ -27,18 +28,34 @@ export function PublicSurvey() {
     if (id) fetchSurvey();
   }, [id]);
 
+  const validateCurrentSection = () => {
+    const currentSection = survey?.sections?.[currentSectionIndex];
+    if (!currentSection) return true;
+    for (const question of currentSection.questions || []) {
+      if (question.required && !answers[question.id]?.trim()) {
+        toast.error(`Please answer the required question: "${question.label}"`);
+        return false;
+      }
+    }
+    return true;
+  };
+
+  const handleNext = () => {
+    if (validateCurrentSection()) {
+      setCurrentSectionIndex(i => i + 1);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  };
+
+  const handleBack = () => {
+    setCurrentSectionIndex(i => Math.max(0, i - 1));
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    // Custom validation for required questions
-    for (const section of survey?.sections || []) {
-      for (const question of section.questions || []) {
-        if (question.required && !answers[question.id]?.trim()) {
-          toast.error(`Please answer the required question: "${question.label}"`);
-          return;
-        }
-      }
-    }
+    if (!validateCurrentSection()) return;
 
     try {
       const formattedAnswers = Object.keys(answers).map(qId => ({
@@ -166,11 +183,13 @@ export function PublicSurvey() {
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-6">
-          {survey.sections?.map((section: any) => (
-            <div key={section.id} className="bg-white rounded-2xl shadow-sm border border-gray-100 p-8">
-              <h2 className="text-xl font-bold text-gray-800 mb-6 border-b border-gray-100 pb-4">{section.title}</h2>
+          {survey.sections?.[currentSectionIndex] && (
+            <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-8">
+              <h2 className="text-xl font-bold text-gray-800 mb-6 border-b border-gray-100 pb-4">
+                {survey.sections[currentSectionIndex].title}
+              </h2>
               <div className="space-y-8">
-                {section.questions?.map((question: any) => (
+                {survey.sections[currentSectionIndex].questions?.map((question: any) => (
                   <div key={question.id} className="flex flex-col gap-2">
                     <label className="font-semibold text-gray-800">
                       {question.label} {question.required && <span className="text-red-500">*</span>}
@@ -180,12 +199,35 @@ export function PublicSurvey() {
                 ))}
               </div>
             </div>
-          ))}
+          )}
 
-          <div className="flex justify-end">
-            <button type="submit" className="bg-blue-600 hover:bg-blue-700 text-white px-8 py-3 rounded-xl font-bold shadow-md transition-colors">
-              Submit Survey
-            </button>
+          <div className="flex justify-between items-center mt-8">
+            {currentSectionIndex > 0 ? (
+              <button 
+                type="button" 
+                onClick={handleBack} 
+                className="px-6 py-2.5 rounded-xl font-semibold text-gray-600 bg-white border border-gray-200 shadow-sm hover:bg-gray-50 transition-colors"
+              >
+                Back
+              </button>
+            ) : <div></div>}
+
+            {currentSectionIndex < (survey.sections?.length || 1) - 1 ? (
+              <button 
+                type="button" 
+                onClick={handleNext} 
+                className="bg-blue-600 hover:bg-blue-700 text-white px-8 py-2.5 rounded-xl font-bold shadow-md transition-colors"
+              >
+                Next
+              </button>
+            ) : (
+              <button 
+                type="submit" 
+                className="bg-blue-600 hover:bg-blue-700 text-white px-8 py-2.5 rounded-xl font-bold shadow-md transition-colors"
+              >
+                Submit Survey
+              </button>
+            )}
           </div>
         </form>
       </div>

@@ -580,9 +580,26 @@ export function Surveys() {
                 </div>
               </div>
 
-              {sections.map(section => (
-                <div key={section.id} className="space-y-6 bg-white p-6 rounded-xl border border-gray-200 shadow-sm">
-                  <div className="flex justify-between items-center border-b border-gray-100 pb-4">
+              {sections.map((section, index) => (
+                <div key={section.id} className="relative">
+                  {index > 0 && (
+                    <div className="flex items-center gap-4 my-8">
+                      <div className="h-px bg-gray-300 flex-1"></div>
+                      <span className="text-xs font-bold text-gray-500 uppercase tracking-widest bg-gray-100 px-3 py-1 rounded-full">
+                        Page Break (Page {index + 1} of {sections.length})
+                      </span>
+                      <div className="h-px bg-gray-300 flex-1"></div>
+                    </div>
+                  )}
+                  {index === 0 && (
+                    <div className="flex items-center gap-4 mt-8 mb-4">
+                      <span className="text-xs font-bold text-blue-600 uppercase tracking-widest bg-blue-50 px-3 py-1 rounded-full border border-blue-100">
+                        Page 1 (Start)
+                      </span>
+                    </div>
+                  )}
+                  <div className="space-y-6 bg-white p-6 rounded-xl border border-gray-200 shadow-sm">
+                    <div className="flex justify-between items-center border-b border-gray-100 pb-4">
                     <input 
                       type="text" 
                       value={section.title}
@@ -638,6 +655,7 @@ export function Surveys() {
                     >
                       <Plus className="w-4 h-4" /> Add Question to Section
                     </button>
+                  </div>
                   </div>
                 </div>
               ))}
