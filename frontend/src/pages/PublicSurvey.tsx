@@ -134,8 +134,8 @@ export function PublicSurvey() {
                     className={cn(
                       "w-8 h-8 transition-colors",
                       isSelected 
-                        ? "text-amber-500 fill-amber-500/20" 
-                        : "text-slate-400 dark:text-white hover:text-amber-500"
+                        ? "text-amber-500 fill-amber-500" 
+                        : "text-gray-300 fill-gray-50 hover:text-amber-400 hover:fill-amber-100"
                     )}
                   />
                 </button>
@@ -218,22 +218,28 @@ export function PublicSurvey() {
               </button>
             ) : <div></div>}
 
-            {currentSectionIndex < (survey.sections?.length || 1) - 1 ? (
-              <button 
-                type="button" 
-                onClick={handleNext} 
-                className="bg-blue-600 hover:bg-blue-700 text-white px-8 py-2.5 rounded-xl font-bold shadow-md transition-colors"
-              >
-                Next Page
-              </button>
-            ) : (
-              <button 
-                type="submit" 
-                className="bg-blue-600 hover:bg-blue-700 text-white px-8 py-2.5 rounded-xl font-bold shadow-md transition-colors"
-              >
-                Submit Survey
-              </button>
-            )}
+            <div className="flex gap-4">
+              {currentSectionIndex < (survey.sections?.length || 1) - 1 && (
+                <button 
+                  key="next-btn"
+                  type="button" 
+                  onClick={handleNext} 
+                  className="bg-blue-600 hover:bg-blue-700 text-white px-8 py-2.5 rounded-xl font-bold shadow-md transition-colors"
+                >
+                  Next Page
+                </button>
+              )}
+              
+              {currentSectionIndex === (survey.sections?.length || 1) - 1 && (
+                <button 
+                  key="submit-btn"
+                  type="submit" 
+                  className="bg-emerald-600 hover:bg-emerald-700 text-white px-8 py-2.5 rounded-xl font-bold shadow-md transition-colors"
+                >
+                  Submit Survey
+                </button>
+              )}
+            </div>
           </div>
         </form>
       </div>
