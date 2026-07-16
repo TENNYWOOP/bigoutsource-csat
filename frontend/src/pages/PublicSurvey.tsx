@@ -57,6 +57,12 @@ export function PublicSurvey() {
 
     if (!validateCurrentSection()) return;
 
+    if (currentSectionIndex < (survey?.sections?.length || 1) - 1) {
+      setCurrentSectionIndex(i => i + 1);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+      return;
+    }
+
     try {
       const formattedAnswers = Object.keys(answers).map(qId => ({
         question_id: qId,
