@@ -1,10 +1,11 @@
 import { useState, useEffect } from 'react';
 import { 
-  Plus, Edit2, Trash2, ArrowLeft, Save, Send, Building, Link as LinkIcon, CheckCircle2
+  Plus, Edit2, Trash2, ArrowLeft, Save, Send, Building, Link as LinkIcon, CheckCircle2, Star
 } from 'lucide-react';
 import { cn } from '../lib/utils';
 import { api } from '../lib/api';
 import { useAuth } from '../lib/auth';
+import { useToast } from '../components/Toast';
 
 interface Question {
   id: string;
@@ -23,6 +24,7 @@ interface Section {
 
 export function Surveys() {
   const { user, canManage, isGlobal } = useAuth();
+  const toast = useToast();
   const [campaignsList, setCampaignsList] = useState<any[]>([]);
   const [departments, setDepartments] = useState<any[]>([]);
   const [questionTypes, setQuestionTypes] = useState<any[]>([]);
@@ -30,6 +32,7 @@ export function Surveys() {
 
   // States
   const [isCreating, setIsCreating] = useState(false);
+  const [isClosing, setIsClosing] = useState(false);
   const [viewingSurvey, setViewingSurvey] = useState<any>(null);
   const [activeTab, setActiveTab] = useState<'questions' | 'responses'>('questions');
   const [surveyResponses, setSurveyResponses] = useState<any[]>([]);
@@ -99,6 +102,15 @@ export function Surveys() {
     }
   };
 
+  const handleCloseCreator = () => {
+    setIsClosing(true);
+    setTimeout(() => {
+      setIsCreating(false);
+      setIsClosing(false);
+      setEditingSurveyId(null);
+    }, 200);
+  };
+
   const handleAddSection = () => {
     const newId = `s${Date.now()}`;
     setSections([...sections, { id: newId, title: 'New Section', order: sections.length + 1 }]);
@@ -142,7 +154,7 @@ export function Surveys() {
 
   const handleLaunchCampaign = async (status: 'ACTIVE' | 'DRAFT') => {
     if (!surveyTitle.trim()) {
-      alert('Please enter a survey title.');
+      toast.error('Please enter a survey title.');
       return;
     }
 
@@ -168,25 +180,37 @@ export function Surveys() {
     try {
       if (editingSurveyId) {
         await api.put(`/surveys/${editingSurveyId}`, payload);
+        toast.success('Survey campaign updated successfully!');
       } else {
         await api.post('/surveys', payload);
+        toast.success(status === 'ACTIVE' ? 'Survey campaign launched successfully!' : 'Survey campaign draft saved!');
       }
 
       const updated = await api.get('/surveys');
       setCampaignsList(updated);
-      resetForm();
+      setIsClosing(true);
+      setTimeout(() => {
+        resetForm();
+        setIsClosing(false);
+      }, 200);
     } catch (err: any) {
-      alert(err.message);
+      toast.error(err.message || 'Failed to save survey campaign');
     }
   };
 
   const executeDeleteCampaign = async () => {
     if (!deletingSurveyId) return;
-    await api.delete(`/surveys/${deletingSurveyId}`);
-    setCampaignsList(campaignsList.filter(c => c.id !== deletingSurveyId));
-    if (viewingSurvey?.id === deletingSurveyId) setViewingSurvey(null);
-    setDeletingSurveyId(null);
-    setDeleteConfirmationText('');
+    try {
+      await api.delete(`/surveys/${deletingSurveyId}`);
+      setCampaignsList(campaignsList.filter(c => c.id !== deletingSurveyId));
+      if (viewingSurvey?.id === deletingSurveyId) setViewingSurvey(null);
+      toast.success('Survey campaign deleted successfully!');
+    } catch (err: any) {
+      toast.error(err.message || 'Failed to delete survey campaign');
+    } finally {
+      setDeletingSurveyId(null);
+      setDeleteConfirmationText('');
+    }
   };
 
   const copyToClipboard = (id: string) => {
@@ -235,11 +259,57 @@ export function Surveys() {
     try { config = JSON.parse(qt.config_schema); } catch {}
 
     const ComponentRegistry: any = {
-      'StarRating': () => <div className="text-gray-400 text-2xl">⭐⭐⭐⭐⭐ <span className="text-sm ml-2">Rating Scale</span></div>,
-      'DateInput': () => <div className="py-2 border-b border-dashed border-gray-200 text-sm text-gray-400 select-none">MM/DD/YYYY</div>,
-      'PersonnelSelect': () => <div className="py-2 px-3 border border-gray-200 rounded-lg text-sm text-gray-400 bg-gray-50 flex justify-between"><span>Select personnel...</span><span>▼</span></div>,
-      'Textarea': () => <div className="py-2 border-b border-dashed border-gray-200 text-sm text-gray-400 select-none">Respondents will type a paragraph here.</div>,
-      'TextInput': () => <div className="py-2 border-b border-dashed border-gray-200 text-sm text-gray-400 select-none">Respondents will type a short answer here.</div>
+      'StarRating': () => {
+        const [val, setVal] = useState(0);
+        return (
+          <div className="flex items-center gap-1.5 py-1">
+            {[1, 2, 3, 4, 5].map((star) => {
+              const isSelected = val >= star;
+              return (
+                <button
+                  key={star}
+                  type="button"
+                  onClick={() => setVal(star)}
+                  className="focus:outline-none transition-transform hover:scale-110 cursor-pointer"
+                >
+                  <Star 
+                    strokeWidth={1.5}
+                    className={cn(
+                      "w-5 h-5 transition-colors",
+                      isSelected 
+                        ? "text-amber-500 fill-amber-500/20" 
+                        : "text-slate-400 dark:text-white hover:text-amber-500"
+                    )}
+                  />
+                </button>
+              );
+            })}
+            <span className="text-xs font-semibold text-gray-400 ml-2 select-none">Rating Scale</span>
+          </div>
+        );
+      },
+      'DateInput': () => (
+        <div className="w-full max-w-xs px-4 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm text-gray-400 dark:text-slate-400 select-none flex justify-between items-center dark:border-slate-700/60">
+          <span>MM/DD/YYYY</span>
+          <span className="text-xs">📅</span>
+        </div>
+      ),
+      'PersonnelSelect': () => (
+        <div className="w-full max-w-md px-4 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm text-gray-400 dark:text-slate-400 flex justify-between items-center dark:border-slate-700/60">
+          <span>Select personnel...</span>
+          <span className="text-[10px]">▼</span>
+        </div>
+      ),
+      'Textarea': () => (
+        <div className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-lg text-sm text-gray-400 dark:text-slate-400 select-none min-h-[80px] dark:border-slate-700/60">
+          Respondents will type a paragraph here.
+        </div>
+      ),
+      'TextInput': () => (
+        <div className="w-full max-w-md px-4 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm text-gray-400 dark:text-slate-400 select-none dark:border-slate-700/60">
+          Respondents will type a short answer here.
+        </div>
+      )
     };
 
     const Comp = ComponentRegistry[config.component] || ComponentRegistry['TextInput'];
@@ -457,10 +527,22 @@ export function Surveys() {
       </div>
 
       {isCreating && (
-        <div className="fixed inset-0 bg-black/60 z-50 flex items-start justify-center overflow-y-auto py-10 px-4">
-          <div className="bg-gray-50 rounded-2xl w-full max-w-4xl shadow-2xl relative border border-gray-200 pb-12 p-6 md:p-8">
+        <div 
+          onClick={handleCloseCreator}
+          className={cn(
+            "fixed inset-0 bg-black/60 z-50 flex items-start justify-center overflow-y-auto py-10 px-4 cursor-pointer",
+            isClosing ? "animate-fade-out" : "animate-fade-in"
+          )}
+        >
+          <div 
+            onClick={(e) => e.stopPropagation()}
+            className={cn(
+              "bg-gray-50 rounded-2xl w-full max-w-4xl shadow-2xl relative border border-gray-200 pb-12 p-6 md:p-8 cursor-default",
+              isClosing ? "animate-modal-exit" : "animate-modal-entry"
+            )}
+          >
             <div className="flex justify-between items-center mb-6">
-              <button onClick={resetForm} className="flex items-center gap-2 text-sm font-semibold text-gray-600 hover:text-gray-900">
+              <button onClick={handleCloseCreator} className="flex items-center gap-2 text-sm font-semibold text-gray-600 hover:text-gray-900">
                 <ArrowLeft className="w-4 h-4" /> Cancel
               </button>
               
@@ -561,7 +643,10 @@ export function Surveys() {
               ))}
 
               <div className="flex justify-center pt-6">
-                <button onClick={handleAddSection} className="bg-gray-200 hover:bg-gray-300 text-gray-700 px-6 py-2 rounded-full text-sm font-bold flex items-center gap-2 transition-colors">
+                <button 
+                  onClick={handleAddSection} 
+                  className="bg-gray-200 hover:bg-gray-300 text-gray-700 dark:bg-slate-800 dark:hover:bg-slate-700/80 dark:text-slate-200 dark:border dark:border-slate-700/50 px-6 py-2 rounded-full text-sm font-bold flex items-center gap-2 transition-colors"
+                >
                   <Plus className="w-4 h-4" /> Add New Section
                 </button>
               </div>
