@@ -14,6 +14,7 @@ interface Question {
   required?: boolean;
   section_id: string;
   question_order: number;
+  isFixed?: boolean;
 }
 
 interface Section {
@@ -49,14 +50,17 @@ export function Surveys() {
   const [selectedDeptId, setSelectedDeptId] = useState('');
 
   const [sections, setSections] = useState<Section[]>([
-    { id: 's1', title: 'Transaction Details', order: 1 }
+    { id: 's1', title: 'Transaction Details', order: 1 },
+    { id: 's2', title: 'Feedback', order: 2 }
   ]);
   
   const [questions, setQuestions] = useState<Question[]>([
-    { id: 'q1', type_id: 'date', label: 'Date of Transaction', required: true, section_id: 's1', question_order: 1 },
-    { id: 'q2', type_id: 'short-text', label: 'Full Name', required: true, section_id: 's1', question_order: 2 },
-    { id: 'q3', type_id: 'personnel-dropdown', label: 'Name of IT Personnel', required: true, section_id: 's1', question_order: 3 },
-    { id: 'q4', type_id: 'short-text', label: 'Ticket Number', required: true, section_id: 's1', question_order: 4 }
+    { id: 'q1', type_id: 'date', label: 'Date of Transaction', required: true, section_id: 's1', question_order: 1, isFixed: true },
+    { id: 'q2', type_id: 'short-text', label: 'Full Name', required: true, section_id: 's1', question_order: 2, isFixed: true },
+    { id: 'q3', type_id: 'personnel-dropdown', label: 'Name of IT Personnel', required: true, section_id: 's1', question_order: 3, isFixed: true },
+    { id: 'q4', type_id: 'short-text', label: 'Ticket Number', required: true, section_id: 's1', question_order: 4, isFixed: true },
+    { id: 'q5', type_id: 'short-text', label: 'Email of the person who is submitting the survey', required: true, section_id: 's1', question_order: 5, isFixed: true },
+    { id: 'q6', type_id: 'paragraph', label: 'Please share any feedback or suggestions to help improve our services', required: true, section_id: 's2', question_order: 1, isFixed: true }
   ]);
 
   const [activeQuestionId, setActiveQuestionId] = useState<string | null>('q1');
@@ -143,12 +147,17 @@ export function Surveys() {
     setEditingSurveyId(null);
     setSurveyTitle('');
     setSurveyDesc('');
-    setSections([{ id: 's1', title: 'Transaction Details', order: 1 }]);
+    setSections([
+      { id: 's1', title: 'Transaction Details', order: 1 },
+      { id: 's2', title: 'Feedback', order: 2 }
+    ]);
     setQuestions([
-      { id: 'q1', type_id: 'date', label: 'Date of Transaction', required: true, section_id: 's1', question_order: 1 },
-      { id: 'q2', type_id: 'short-text', label: 'Full Name', required: true, section_id: 's1', question_order: 2 },
-      { id: 'q3', type_id: 'personnel-dropdown', label: 'Name of IT Personnel', required: true, section_id: 's1', question_order: 3 },
-      { id: 'q4', type_id: 'short-text', label: 'Ticket Number', required: true, section_id: 's1', question_order: 4 }
+      { id: 'q1', type_id: 'date', label: 'Date of Transaction', required: true, section_id: 's1', question_order: 1, isFixed: true },
+      { id: 'q2', type_id: 'short-text', label: 'Full Name', required: true, section_id: 's1', question_order: 2, isFixed: true },
+      { id: 'q3', type_id: 'personnel-dropdown', label: 'Name of IT Personnel', required: true, section_id: 's1', question_order: 3, isFixed: true },
+      { id: 'q4', type_id: 'short-text', label: 'Ticket Number', required: true, section_id: 's1', question_order: 4, isFixed: true },
+      { id: 'q5', type_id: 'short-text', label: 'Email of the person who is submitting the survey', required: true, section_id: 's1', question_order: 5, isFixed: true },
+      { id: 'q6', type_id: 'paragraph', label: 'Please share any feedback or suggestions to help improve our services', required: true, section_id: 's2', question_order: 1, isFixed: true }
     ]);
   };
 
@@ -165,7 +174,8 @@ export function Surveys() {
         type_id: q.type_id,
         label: q.label,
         required: q.required,
-        question_order: q.question_order
+        question_order: q.question_order,
+        config: q.isFixed ? JSON.stringify({ isFixed: true }) : '{}'
       }))
     }));
 
@@ -234,13 +244,20 @@ export function Surveys() {
       const sId = `s_${s.id}`;
       newSections.push({ id: sId, title: s.title, order: s.section_order });
       s.questions?.forEach((q: any) => {
+        let isFixed = false;
+        try {
+          const config = JSON.parse(q.config || '{}');
+          isFixed = !!config.isFixed;
+        } catch (e) {}
+
         newQuestions.push({
           id: `q_${q.id}`,
           type_id: q.type_id,
           label: q.label,
           required: q.required,
           section_id: sId,
-          question_order: q.question_order
+          question_order: q.question_order,
+          isFixed
         });
       });
     });
@@ -604,9 +621,12 @@ export function Surveys() {
                       type="text" 
                       value={section.title}
                       onChange={e => setSections(sections.map(s => s.id === section.id ? { ...s, title: e.target.value } : s))}
-                      className="text-xl font-bold text-gray-800 border-b border-transparent focus:border-indigo-600 focus:outline-none"
+                      disabled={index <= 1}
+                      className={cn("text-xl font-bold text-gray-800 border-b border-transparent focus:border-indigo-600 focus:outline-none", index <= 1 && "bg-transparent cursor-not-allowed")}
                     />
-                    <button onClick={() => handleDeleteSection(section.id)} className="text-red-500 hover:text-red-700 text-sm font-semibold">Delete Section</button>
+                    {index > 1 && (
+                      <button onClick={() => handleDeleteSection(section.id)} className="text-red-500 hover:text-red-700 text-sm font-semibold">Delete Section</button>
+                    )}
                   </div>
                   
                   {questions.filter(q => q.section_id === section.id).map(question => {
@@ -621,17 +641,21 @@ export function Surveys() {
                               type="text" 
                               value={question.label}
                               onChange={(e) => setQuestions(questions.map(q => q.id === question.id ? { ...q, label: e.target.value } : q))}
-                              className="w-full font-bold text-gray-800 border-b border-transparent focus:border-indigo-500 focus:outline-none pb-1.5 text-base"
+                              disabled={question.isFixed}
+                              className={cn("w-full font-bold text-gray-800 border-b border-transparent focus:border-indigo-500 focus:outline-none pb-1.5 text-base", question.isFixed && "bg-transparent cursor-not-allowed text-gray-600")}
                             />
                             <div className="flex items-center gap-2 ml-4">
                               <select 
                                 value={question.type_id}
                                 onChange={e => setQuestions(questions.map(q => q.id === question.id ? { ...q, type_id: e.target.value } : q))}
-                                className="px-3 py-1.5 bg-gray-50 border border-gray-100 rounded-lg text-xs font-semibold text-gray-500"
+                                disabled={question.isFixed}
+                                className={cn("px-3 py-1.5 bg-gray-50 border border-gray-100 rounded-lg text-xs font-semibold text-gray-500", question.isFixed && "opacity-60 cursor-not-allowed")}
                               >
                                 {questionTypes.map(qt => <option key={qt.id} value={qt.id}>{qt.label}</option>)}
                               </select>
-                              <button onClick={(e) => { e.stopPropagation(); handleDeleteQuestion(question.id); }} className="p-1.5 text-gray-400 hover:text-red-500"><Trash2 className="w-4 h-4" /></button>
+                              {!question.isFixed && (
+                                <button onClick={(e) => { e.stopPropagation(); handleDeleteQuestion(question.id); }} className="p-1.5 text-gray-400 hover:text-red-500"><Trash2 className="w-4 h-4" /></button>
+                              )}
                             </div>
                           </div>
                           
@@ -639,8 +663,13 @@ export function Surveys() {
                           {renderConfigComponent(question.type_id)}
                           
                           <div className="mt-4 flex items-center justify-end border-t border-gray-50 pt-3">
-                            <label className="flex items-center gap-2 text-xs font-semibold text-gray-600 cursor-pointer">
-                              <input type="checkbox" checked={question.required} onChange={e => setQuestions(questions.map(q => q.id === question.id ? { ...q, required: e.target.checked } : q))} /> Required
+                            <label className={cn("flex items-center gap-2 text-xs font-semibold cursor-pointer", question.isFixed ? "text-gray-400 cursor-not-allowed" : "text-gray-600")}>
+                              <input 
+                                type="checkbox" 
+                                checked={question.required} 
+                                disabled={question.isFixed}
+                                onChange={e => setQuestions(questions.map(q => q.id === question.id ? { ...q, required: e.target.checked } : q))} 
+                              /> Required
                             </label>
                           </div>
                         </div>
