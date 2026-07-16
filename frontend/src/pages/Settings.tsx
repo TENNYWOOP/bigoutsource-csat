@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { ShieldCheck, Server } from 'lucide-react';
+import { ShieldCheck } from 'lucide-react';
 import { useAuth } from '../lib/auth';
 
 export function Settings() {
@@ -67,27 +67,7 @@ export function Settings() {
             </div>
           </div>
         </div>
-        
-        <div className="space-y-6">
-          <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
-            <div className="flex items-center gap-2 text-blue-600 font-bold text-sm mb-6 uppercase tracking-wider">
-              <Server className="w-4 h-4" /> System Preferences
-            </div>
-            
-            <div className="mb-4">
-              <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">
-                System Target CSAT Benchmark
-              </label>
-              <input type="range" min="0" max="100" defaultValue="85" className="w-full h-1.5 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-blue-600" />
-            </div>
 
-            <div className="flex justify-end mt-6 pt-6 border-t border-gray-100">
-              <button className="bg-gray-900 hover:bg-gray-800 text-white px-6 py-2.5 rounded-lg text-sm font-semibold transition-colors flex items-center gap-2 shadow-sm">
-                Commit Changes
-              </button>
-            </div>
-          </div>
-        </div>
       </div>
     </div>
   );

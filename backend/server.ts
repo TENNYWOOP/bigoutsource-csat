@@ -357,6 +357,21 @@ app.get('/api/audit-logs', requireRole(['SUPER ADMIN', 'DEPARTMENT ADMIN']), asy
   res.json(logs);
 });
 
+app.get('/api/notifications', requireRole(['SUPER ADMIN', 'DEPARTMENT ADMIN']), async (req: any, res: any) => {
+  let where: any = { category: { not: 'Security' } };
+  if (!req.user.role.is_global) {
+    where.department_id = req.user.department_id;
+  }
+  
+  const notifications = await prisma.auditLog.findMany({
+    where,
+    include: { user: true },
+    orderBy: { timestamp: 'desc' },
+    take: 15
+  });
+  res.json(notifications);
+});
+
 // ----------------------------------------------------
 // DASHBOARD ANALYTICS
 // ----------------------------------------------------
