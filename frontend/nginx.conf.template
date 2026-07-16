@@ -19,6 +19,11 @@ server {
     # Fallback to index.html for React Router
     location / {
         try_files $uri $uri/ /index.html;
+        
+        # Don't cache index.html so updates are immediate
+        if ($uri = '/index.html') {
+            add_header Cache-Control "no-cache, no-store, must-revalidate";
+        }
     }
 
     # Proxy API requests directly from nginx to backend
