@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { 
-  Plus, Edit2, Trash2, ArrowLeft, Save, Send, Building, Link as LinkIcon, CheckCircle2, Star, PauseCircle, PlayCircle
+  Plus, Edit2, Trash2, ArrowLeft, Save, Send, Building, Link as LinkIcon, CheckCircle2, Star, PauseCircle, PlayCircle, X
 } from 'lucide-react';
 import { cn } from '../lib/utils';
 import { api } from '../lib/api';
@@ -37,6 +37,7 @@ export function Surveys() {
   const [viewingSurvey, setViewingSurvey] = useState<any>(null);
   const [activeTab, setActiveTab] = useState<'questions' | 'responses'>('questions');
   const [surveyResponses, setSurveyResponses] = useState<any[]>([]);
+  const [selectedResponse, setSelectedResponse] = useState<any>(null);
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [editingSurveyId, setEditingSurveyId] = useState<string | null>(null);
   
@@ -451,7 +452,8 @@ export function Surveys() {
                   <tr className="bg-gray-50 border-b border-gray-200 text-gray-500">
                     <th className="p-4 font-semibold uppercase text-xs">Date</th>
                     <th className="p-4 font-semibold uppercase text-xs">Response ID</th>
-                    <th className="p-4 font-semibold uppercase text-xs">Answers</th>
+                    <th className="p-4 font-semibold uppercase text-xs">Answers Preview</th>
+                    <th className="p-4 font-semibold uppercase text-xs text-right">Actions</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-100">
@@ -464,12 +466,23 @@ export function Surveys() {
                       <td className="p-4 font-mono text-xs text-gray-500 align-top">{r.id.split('-')[0]}</td>
                       <td className="p-4">
                         <div className="flex flex-col gap-2">
-                          {r.answers.map((a: any) => (
+                          {r.answers.slice(0, 2).map((a: any) => (
                             <div key={a.id} className="text-xs">
                               <span className="font-semibold text-gray-700">{a.question?.label}:</span> <span className="text-gray-600">{a.value}</span>
                             </div>
                           ))}
+                          {r.answers.length > 2 && (
+                            <div className="text-xs text-gray-400 italic">+{r.answers.length - 2} more answers...</div>
+                          )}
                         </div>
+                      </td>
+                      <td className="p-4 text-right align-top">
+                        <button 
+                          onClick={() => setSelectedResponse(r)}
+                          className="px-3 py-1.5 bg-blue-50 text-blue-600 hover:bg-blue-100 font-semibold rounded-lg text-xs transition-colors"
+                        >
+                          View Details
+                        </button>
                       </td>
                     </tr>
                   ))}
@@ -479,9 +492,96 @@ export function Surveys() {
           )}
         </div>
 
+        {selectedResponse && (
+          <div className="fixed inset-0 z-50 flex flex-col p-4 bg-gray-50 overflow-y-auto" onClick={() => setSelectedResponse(null)}>
+            <div className="w-full max-w-3xl mx-auto my-auto py-8">
+              <div className="flex justify-between items-center mb-6">
+                <h3 className="text-2xl font-bold text-gray-900">Response Details</h3>
+                <button onClick={() => setSelectedResponse(null)} className="p-2 bg-white rounded-full shadow hover:bg-gray-100 transition-colors">
+                  <X className="w-6 h-6 text-gray-600" />
+                </button>
+              </div>
+
+              <div className="space-y-6" onClick={e => e.stopPropagation()}>
+                {/* Header Card */}
+                <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+                  <div className="h-3 bg-blue-600"></div>
+                  <div className="p-8">
+                    <h1 className="text-3xl font-bold text-gray-900 mb-2">{viewingSurvey.title}</h1>
+                    {viewingSurvey.description && <p className="text-gray-600 mb-6">{viewingSurvey.description}</p>}
+                    
+                    <div className="flex gap-4 border-t border-gray-100 pt-4">
+                      <div className="text-sm">
+                        <span className="text-gray-500 font-semibold">Response ID: </span>
+                        <span className="font-mono text-gray-900">{selectedResponse.id.split('-')[0]}</span>
+                      </div>
+                      <div className="text-sm">
+                        <span className="text-gray-500 font-semibold">Submitted: </span>
+                        <span className="text-gray-900">{new Date(selectedResponse.submitted_at).toLocaleString()}</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Sections */}
+                {viewingSurvey.sections?.map((s: any) => (
+                  <div key={s.id} className="bg-white rounded-2xl shadow-sm border border-gray-100 p-8">
+                    <h2 className="text-xl font-bold text-gray-800 mb-6 border-b border-gray-100 pb-4">
+                      {s.title}
+                    </h2>
+                    <div className="space-y-8">
+                      {s.questions?.map((question: any) => {
+                        const answer = selectedResponse.answers.find((a: any) => a.question_id === question.id);
+                        const value = answer ? answer.value : '';
+                        
+                        return (
+                          <div key={question.id} className="flex flex-col gap-2">
+                            <label className="font-semibold text-gray-800">
+                              {question.label} {question.required && <span className="text-red-500">*</span>}
+                            </label>
+                            
+                            {question.type?.name === 'rating' ? (
+                              <div className="flex items-center gap-1.5 py-1">
+                                {[1, 2, 3, 4, 5].map((star) => (
+                                  <Star
+                                    key={star}
+                                    strokeWidth={1.5}
+                                    className={cn(
+                                      "w-8 h-8",
+                                      Number(value) >= star 
+                                        ? "text-amber-500 fill-amber-500" 
+                                        : "text-gray-300 fill-gray-50"
+                                    )}
+                                  />
+                                ))}
+                                {value && (
+                                  <span className="text-xs font-bold text-amber-600 bg-amber-50 px-2 py-0.5 rounded-full ml-3 select-none">
+                                    Score: {value} / 5
+                                  </span>
+                                )}
+                              </div>
+                            ) : (
+                              <div className={cn(
+                                "w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-lg text-sm text-gray-900",
+                                question.type?.name === 'paragraph' ? "min-h-[100px] whitespace-pre-wrap" : ""
+                              )}>
+                                {value || <span className="text-gray-400 italic">No answer provided</span>}
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Delete Confirmation Modal */}
-        {deletingSurveyId && (
-          <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4">
+        {deleteConfirmationText && deletingSurveyId && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-gray-900/40 backdrop-blur-sm">
             <div className="bg-white rounded-2xl w-full max-w-md shadow-2xl p-6">
               <h3 className="text-xl font-bold text-gray-900 mb-2">Delete Survey</h3>
               <p className="text-gray-500 text-sm mb-6">
