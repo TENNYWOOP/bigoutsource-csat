@@ -23,6 +23,8 @@ export function Sidebar() {
     ...(isGlobal() ? [{ name: 'Settings', path: '/settings', icon: Settings }] : []),
   ];
 
+  const initials = user?.name ? user.name.split(' ').map((n: string) => n[0]).join('').substring(0, 2).toUpperCase() : 'U';
+
   return (
     <aside className="w-64 bg-white border-r border-gray-200 h-screen flex flex-col fixed left-0 top-0">
       {/* Logo Area */}
@@ -63,7 +65,7 @@ export function Sidebar() {
       <div className="p-4 border-t border-gray-200">
         <div className="flex items-center gap-3 mb-6 px-2">
           <div className="w-9 h-9 rounded-full bg-gray-100 flex items-center justify-center text-gray-600 font-semibold text-sm border border-gray-200">
-            {user?.name?.charAt(0) || 'U'}
+            {initials}
           </div>
           <div className="flex flex-col">
             <span className="text-sm font-semibold text-gray-900 leading-none">{user?.name}</span>
