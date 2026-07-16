@@ -2,9 +2,11 @@ import { Search, UserPlus, Edit2, Trash2, Building, X } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { api } from '../lib/api';
 import { useAuth } from '../lib/auth';
+import { useToast } from '../components/Toast';
 
 export function Personnel() {
   const { user, canManage, isGlobal } = useAuth();
+  const toast = useToast();
   const [personnel, setPersonnel] = useState<any[]>([]);
   const [departments, setDepartments] = useState<any[]>([]);
   const [roles, setRoles] = useState<any[]>([]);
@@ -24,6 +26,12 @@ export function Personnel() {
   const [provEmail, setProvEmail] = useState('');
   const [provRoleId, setProvRoleId] = useState('');
   const [provDeptId, setProvDeptId] = useState('');
+
+  // Edit Form State
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editName, setEditName] = useState('');
+  const [editRoleId, setEditRoleId] = useState('');
+  const [editDeptId, setEditDeptId] = useState('');
 
   useEffect(() => {
     fetchData();
@@ -52,8 +60,9 @@ export function Personnel() {
       await api.post('/departments', { name: newDeptName });
       setNewDeptName('');
       fetchData();
+      toast.success('Department created successfully!');
     } catch (e: any) {
-      alert(e.message);
+      toast.error(e.message || 'Failed to create department');
     }
   };
 
@@ -62,13 +71,17 @@ export function Personnel() {
     try {
       await api.delete(`/departments/${id}`);
       fetchData();
+      toast.success('Department deleted successfully!');
     } catch (e: any) {
-      alert(e.message);
+      toast.error(e.message || 'Failed to delete department');
     }
   };
 
   const handleProvision = async () => {
-    if (!provName || !provEmail || !provRoleId || !provDeptId) return alert('Fill all fields');
+    if (!provName || !provEmail || !provRoleId || !provDeptId) {
+      toast.error('Fill all fields');
+      return;
+    }
     try {
       await api.post('/personnel', {
         name: provName,
@@ -80,8 +93,46 @@ export function Personnel() {
       setProvName('');
       setProvEmail('');
       fetchData();
+      toast.success('Personnel provisioned successfully!');
     } catch (e: any) {
-      alert(e.message);
+      toast.error(e.message || 'Failed to provision personnel');
+    }
+  };
+
+  const handleStartEdit = (person: any) => {
+    setEditingId(person.id);
+    setEditName(person.name);
+    setEditRoleId(person.role_id);
+    setEditDeptId(person.department_id || '');
+  };
+
+  const handleSaveEdit = async (id: string) => {
+    if (!editName.trim() || !editRoleId) {
+      toast.error('Name and Role are required.');
+      return;
+    }
+    try {
+      await api.put(`/personnel/${id}`, {
+        name: editName.trim(),
+        role_id: editRoleId,
+        department_id: editDeptId || null
+      });
+      setEditingId(null);
+      fetchData();
+      toast.success('Personnel updated successfully!');
+    } catch (e: any) {
+      toast.error(e.message || 'Failed to save edits');
+    }
+  };
+
+  const handleDeletePersonnel = async (id: string, name: string) => {
+    if (!window.confirm(`Are you sure you want to delete ${name}?`)) return;
+    try {
+      await api.delete(`/personnel/${id}`);
+      fetchData();
+      toast.success('Personnel deleted successfully!');
+    } catch (e: any) {
+      toast.error(e.message || 'Failed to delete personnel');
     }
   };
 
@@ -134,46 +185,114 @@ export function Personnel() {
           <table className="w-full text-left border-collapse">
             <thead>
               <tr className="border-b border-gray-100">
-                <th className="px-4 py-4 text-xs font-bold text-gray-400 uppercase tracking-wider">Team Operator</th>
-                <th className="px-4 py-4 text-xs font-bold text-gray-400 uppercase tracking-wider">Department & Role</th>
-                <th className="px-4 py-4 text-xs font-bold text-gray-400 uppercase tracking-wider">Email Contact</th>
-                <th className="px-4 py-4 text-xs font-bold text-gray-400 uppercase tracking-wider text-right">Administrative</th>
+                <th className="px-4 py-4 text-xs font-bold text-gray-500 dark:text-slate-200 uppercase tracking-wider">Team Operator</th>
+                <th className="px-4 py-4 text-xs font-bold text-gray-500 dark:text-slate-200 uppercase tracking-wider">Department & Role</th>
+                <th className="px-4 py-4 text-xs font-bold text-gray-500 dark:text-slate-200 uppercase tracking-wider">Email Contact</th>
+                <th className="px-4 py-4 text-xs font-bold text-gray-500 dark:text-slate-200 uppercase tracking-wider text-right">Administrative</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-50">
               {loading && <tr><td colSpan={4} className="text-center p-4">Loading...</td></tr>}
-              {!loading && filteredPersonnel.map((person) => (
-                <tr key={person.id} className="hover:bg-gray-50/50 transition-colors">
-                  <td className="px-4 py-4">
-                    <div className="flex items-center gap-4">
-                      <div className="w-10 h-10 rounded-full bg-blue-50 text-blue-600 font-bold flex items-center justify-center text-sm border border-blue-100">
-                        {person.name?.charAt(0) || 'U'}
+              {!loading && filteredPersonnel.map((person) => {
+                const isEditing = editingId === person.id;
+                return (
+                  <tr key={person.id} className="hover:bg-gray-50/50 transition-colors">
+                    <td className="px-4 py-4">
+                      <div className="flex items-center gap-4">
+                        <div className="w-10 h-10 rounded-full bg-blue-50 text-blue-600 font-bold flex items-center justify-center text-sm border border-blue-100">
+                          {person.name?.charAt(0) || 'U'}
+                        </div>
+                        {isEditing ? (
+                          <div className="flex-1 min-w-[150px]">
+                            <input 
+                              type="text" 
+                              value={editName} 
+                              onChange={e => setEditName(e.target.value)} 
+                              className="w-full px-3 py-1.5 text-sm border border-gray-300 dark:border-slate-700/80 rounded-xl focus:outline-none focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 bg-white dark:bg-slate-900 text-gray-900 dark:text-slate-100 placeholder-gray-400 dark:placeholder-slate-500 transition-all duration-200"
+                            />
+                            <div className="text-xs text-gray-400 dark:text-slate-400 font-medium mt-1.5">ID: {person.id.split('-')[0]}</div>
+                          </div>
+                        ) : (
+                          <div>
+                            <div className="font-bold text-gray-900 text-sm">{person.name}</div>
+                            <div className="text-xs text-gray-400 font-medium">ID: {person.id.split('-')[0]}</div>
+                          </div>
+                        )}
                       </div>
-                      <div>
-                        <div className="font-bold text-gray-900 text-sm">{person.name}</div>
-                        <div className="text-xs text-gray-400 font-medium">ID: {person.id.split('-')[0]}</div>
-                      </div>
-                    </div>
-                  </td>
-                  <td className="px-4 py-4">
-                    <div className="font-bold text-gray-900 text-sm">{person.role?.name}</div>
-                    <div className="text-xs text-gray-500 mt-0.5">{person.department?.name || 'Global Access'}</div>
-                  </td>
-                  <td className="px-4 py-4">
-                    <div className="text-sm text-gray-500">{person.email}</div>
-                  </td>
-                  <td className="px-4 py-4">
-                    <div className="flex items-center justify-end gap-2">
-                      <button className="w-8 h-8 rounded-full flex items-center justify-center text-gray-400 hover:text-blue-600 hover:bg-blue-50 transition-colors">
-                        <Edit2 className="w-4 h-4" />
-                      </button>
-                      <button className="w-8 h-8 rounded-full flex items-center justify-center text-gray-400 hover:text-red-600 hover:bg-red-50 transition-colors">
-                        <Trash2 className="w-4 h-4" />
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
+                    </td>
+                    <td className="px-4 py-4">
+                      {isEditing ? (
+                        <div className="space-y-2 min-w-[150px]">
+                          <select 
+                            value={editRoleId} 
+                            onChange={e => setEditRoleId(e.target.value)} 
+                            className="w-full px-3 py-1.5 text-xs border border-gray-300 dark:border-slate-700/80 rounded-xl focus:outline-none focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 bg-white dark:bg-slate-900 text-gray-900 dark:text-slate-100 transition-all duration-200 cursor-pointer"
+                          >
+                            {roles.map(r => (
+                              <option key={r.id} value={r.id} className="bg-white dark:bg-slate-900 text-gray-900 dark:text-slate-100">{r.name}</option>
+                            ))}
+                          </select>
+                          <select 
+                            value={editDeptId} 
+                            onChange={e => setEditDeptId(e.target.value)} 
+                            className="w-full px-3 py-1.5 text-xs border border-gray-300 dark:border-slate-700/80 rounded-xl focus:outline-none focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 bg-white dark:bg-slate-900 text-gray-900 dark:text-slate-100 transition-all duration-200 cursor-pointer"
+                          >
+                            <option value="" className="bg-white dark:bg-slate-900 text-gray-900 dark:text-slate-100">Global Access</option>
+                            {departments.map(d => (
+                              <option key={d.id} value={d.id} className="bg-white dark:bg-slate-900 text-gray-900 dark:text-slate-100">{d.name}</option>
+                            ))}
+                          </select>
+                        </div>
+                      ) : (
+                        <>
+                          <div className="font-bold text-gray-900 text-sm">{person.role?.name}</div>
+                          <div className="text-xs text-gray-500 mt-0.5">{person.department?.name || 'Global Access'}</div>
+                        </>
+                      )}
+                    </td>
+                    <td className="px-4 py-4">
+                      <div className="text-sm text-gray-500">{person.email}</div>
+                    </td>
+                    <td className="px-4 py-4">
+                      {isEditing ? (
+                        <div className="flex items-center justify-end gap-2 text-xs font-semibold">
+                          <button 
+                            onClick={() => handleSaveEdit(person.id)} 
+                            className="px-3.5 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white shadow-lg shadow-emerald-500/20 hover:scale-[1.02] active:scale-[0.98] rounded-xl transition-all duration-200 cursor-pointer"
+                          >
+                            Save
+                          </button>
+                          <button 
+                            onClick={() => setEditingId(null)} 
+                            className="px-3.5 py-1.5 bg-gray-100 hover:bg-gray-200 border border-gray-300/80 dark:bg-slate-800 dark:hover:bg-slate-700 dark:border-slate-700 text-gray-700 dark:text-slate-300 hover:scale-[1.02] active:scale-[0.98] rounded-xl transition-all duration-200 cursor-pointer"
+                          >
+                            Cancel
+                          </button>
+                        </div>
+                      ) : (
+                        <div className="flex items-center justify-end gap-2">
+                          {canManage() && (
+                            <>
+                              <button 
+                                onClick={() => handleStartEdit(person)}
+                                className="w-8 h-8 rounded-full flex items-center justify-center text-gray-400 hover:text-blue-600 hover:bg-blue-50 transition-colors cursor-pointer"
+                              >
+                                <Edit2 className="w-4 h-4" />
+                              </button>
+                              <button 
+                                onClick={() => handleDeletePersonnel(person.id, person.name)}
+                                className="w-8 h-8 rounded-full flex items-center justify-center text-gray-400 hover:text-red-600 hover:bg-red-50 transition-colors cursor-pointer"
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </button>
+                            </>
+                          )}
+                        </div>
+                      )}
+                    </td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         </div>

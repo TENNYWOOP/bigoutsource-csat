@@ -151,6 +151,62 @@ app.post('/api/personnel', requireRole(['SUPER ADMIN', 'DEPARTMENT ADMIN']), asy
   res.json(user);
 });
 
+app.put('/api/personnel/:id', requireRole(['SUPER ADMIN', 'DEPARTMENT ADMIN']), async (req: any, res: any) => {
+  const { id } = req.params;
+  const { name, role_id, department_id } = req.body;
+
+  try {
+    const existing = await prisma.user.findUnique({
+      where: { id },
+      include: { role: true }
+    });
+    if (!existing) return res.status(404).json({ error: 'User not found' });
+
+    if (!req.user.role.is_global && existing.department_id !== req.user.department_id) {
+      return res.status(403).json({ error: 'Forbidden: Cannot edit users outside your department' });
+    }
+
+    if (!req.user.role.is_global && department_id !== req.user.department_id) {
+      return res.status(403).json({ error: 'Forbidden: Cannot move users to other departments' });
+    }
+
+    const updated = await prisma.user.update({
+      where: { id },
+      data: {
+        name,
+        role_id,
+        department_id: department_id || null
+      }
+    });
+
+    await logAudit(req.user.id, department_id, `Updated personnel member: ${name}`, 'Personnel', req.ip);
+    res.json(updated);
+  } catch (error: any) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.delete('/api/personnel/:id', requireRole(['SUPER ADMIN', 'DEPARTMENT ADMIN']), async (req: any, res: any) => {
+  const { id } = req.params;
+
+  try {
+    const existing = await prisma.user.findUnique({
+      where: { id }
+    });
+    if (!existing) return res.status(404).json({ error: 'User not found' });
+
+    if (!req.user.role.is_global && existing.department_id !== req.user.department_id) {
+      return res.status(403).json({ error: 'Forbidden: Cannot delete users outside your department' });
+    }
+
+    await prisma.user.delete({ where: { id } });
+    await logAudit(req.user.id, existing.department_id, `Deleted personnel member: ${existing.name}`, 'Personnel', req.ip);
+    res.json({ success: true });
+  } catch (error: any) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
 app.get('/api/roles', requireAuth, async (req: any, res: any) => {
   const roles = await prisma.role.findMany();
   res.json(roles);
@@ -261,6 +317,13 @@ app.get('/api/surveys/:id', async (req, res) => {
     include: {
       sections: {
         include: { questions: { include: { type: true } } }
+      },
+      department: {
+        include: {
+          users: {
+            select: { id: true, name: true, email: true }
+          }
+        }
       }
     }
   });

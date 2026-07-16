@@ -1,9 +1,13 @@
 import { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { api } from '../lib/api';
+import { useToast } from '../components/Toast';
+import { Star } from 'lucide-react';
+import { cn } from '../lib/utils';
 
 export function PublicSurvey() {
   const { id } = useParams();
+  const toast = useToast();
   const [survey, setSurvey] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [submitted, setSubmitted] = useState(false);
@@ -25,6 +29,17 @@ export function PublicSurvey() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    // Custom validation for required questions
+    for (const section of survey?.sections || []) {
+      for (const question of section.questions || []) {
+        if (question.required && !answers[question.id]?.trim()) {
+          toast.error(`Please answer the required question: "${question.label}"`);
+          return;
+        }
+      }
+    }
+
     try {
       const formattedAnswers = Object.keys(answers).map(qId => ({
         question_id: qId,
@@ -36,8 +51,91 @@ export function PublicSurvey() {
         answers: formattedAnswers
       });
       setSubmitted(true);
+      toast.success('Survey response submitted successfully!');
     } catch (err) {
-      alert('Failed to submit survey.');
+      toast.error('Failed to submit survey.');
+    }
+  };
+
+  const renderQuestionInput = (question: any) => {
+    const value = answers[question.id] || '';
+    const onChange = (val: string) => setAnswers(prev => ({ ...prev, [question.id]: val }));
+
+    switch (question.type_id) {
+      case 'paragraph':
+        return (
+          <textarea
+            placeholder="Type your response here..."
+            className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all text-gray-800 dark:text-slate-100 min-h-[100px]"
+            value={value}
+            onChange={(e) => onChange(e.target.value)}
+          />
+        );
+      case 'date':
+        return (
+          <input
+            type="date"
+            className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all text-gray-800 dark:text-slate-100"
+            value={value}
+            onChange={(e) => onChange(e.target.value)}
+          />
+        );
+      case 'personnel-dropdown':
+        const personnelList = survey?.department?.users || [];
+        return (
+          <select
+            className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all text-gray-800 dark:text-slate-100"
+            value={value}
+            onChange={(e) => onChange(e.target.value)}
+          >
+            <option value="">-- Select Personnel --</option>
+            {personnelList.map((p: any) => (
+              <option key={p.id} value={p.id}>{p.name} ({p.email})</option>
+            ))}
+          </select>
+        );
+      case 'rating':
+        return (
+          <div className="flex items-center gap-1.5 py-1">
+            {[1, 2, 3, 4, 5].map((star) => {
+              const isSelected = Number(value) >= star;
+              return (
+                <button
+                  key={star}
+                  type="button"
+                  onClick={() => onChange(String(star))}
+                  className="focus:outline-none transition-transform hover:scale-110 cursor-pointer"
+                >
+                  <Star
+                    strokeWidth={1.5}
+                    className={cn(
+                      "w-8 h-8 transition-colors",
+                      isSelected 
+                        ? "text-amber-500 fill-amber-500/20" 
+                        : "text-slate-400 dark:text-white hover:text-amber-500"
+                    )}
+                  />
+                </button>
+              );
+            })}
+            {value && (
+              <span className="text-xs font-bold text-amber-600 bg-amber-50 dark:bg-amber-950/30 px-2 py-0.5 rounded-full ml-3 select-none">
+                Score: {value} / 5
+              </span>
+            )}
+          </div>
+        );
+      case 'short-text':
+      default:
+        return (
+          <input
+            type="text"
+            placeholder="Your answer..."
+            className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all text-gray-800 dark:text-slate-100"
+            value={value}
+            onChange={(e) => onChange(e.target.value)}
+          />
+        );
     }
   };
 
@@ -77,14 +175,7 @@ export function PublicSurvey() {
                     <label className="font-semibold text-gray-800">
                       {question.label} {question.required && <span className="text-red-500">*</span>}
                     </label>
-                    <input 
-                      type="text" 
-                      required={question.required}
-                      placeholder="Your answer..."
-                      className="px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
-                      value={answers[question.id] || ''}
-                      onChange={(e) => setAnswers(prev => ({ ...prev, [question.id]: e.target.value }))}
-                    />
+                    {renderQuestionInput(question)}
                   </div>
                 ))}
               </div>

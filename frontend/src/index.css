@@ -152,3 +152,85 @@ html.dark .border-amber-100,
 html.dark .border-red-100 {
   border-color: rgba(51, 65, 85, 0.5) !important; /* Semi-transparent border */
 }
+
+@keyframes slideIn {
+  from {
+    transform: translateY(8px) scale(0.95);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0) scale(1);
+    opacity: 1;
+  }
+}
+
+.animate-slide-in {
+  animation: slideIn 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes modalEntry {
+  from {
+    opacity: 0;
+    transform: scale(0.96) translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.2s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.animate-modal-entry {
+  animation: modalEntry 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes fadeOut {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
+}
+
+@keyframes modalExit {
+  from {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+  to {
+    opacity: 0;
+    transform: scale(0.96) translateY(12px);
+  }
+}
+
+.animate-fade-out {
+  animation: fadeOut 0.2s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.animate-modal-exit {
+  animation: modalExit 0.2s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+/* Dark Mode bg-gray-200 and hover overrides */
+html.dark .bg-gray-200 {
+  background-color: #1e293b !important;
+}
+html.dark .hover\:bg-gray-200:hover {
+  background-color: #334155 !important;
+}
+html.dark .hover\:bg-gray-300:hover {
+  background-color: #475569 !important;
+}
