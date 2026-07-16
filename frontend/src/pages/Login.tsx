@@ -50,7 +50,6 @@ export function Login() {
           <p>Demo Accounts:</p>
           <ul className="list-disc pl-4 space-y-1">
             <li>superadmin@bigoutsource.com (Super Admin)</li>
-            <li>dmiller@bigoutsource.com (Dept Manager)</li>
           </ul>
         </div>
       </div>

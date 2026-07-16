@@ -4,13 +4,14 @@ generator client {
 }
 
 datasource db {
-  provider = "sqlite"
-  url      = "file:./dev.db"
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
 }
 
 model Department {
   id         String   @id @default(uuid())
-  name       String
+  name       String   @unique
+  code       String   @unique @default("SYS")
   created_at DateTime @default(now())
   
   users      User[]
@@ -33,6 +34,7 @@ model User {
   email         String   @unique
   role_id       String
   department_id String?
+  job_title     String?
   
   role       Role       @relation(fields: [role_id], references: [id])
   department Department? @relation(fields: [department_id], references: [id])

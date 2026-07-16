@@ -1,4 +1,4 @@
-const API_URL = 'http://localhost:3001/api';
+const API_URL = '/api';
 
 function getAuthHeader(): Record<string, string> {
   const token = localStorage.getItem('token');

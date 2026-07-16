@@ -67,7 +67,11 @@ export function Sidebar() {
           </div>
           <div className="flex flex-col">
             <span className="text-sm font-semibold text-gray-900 leading-none">{user?.name}</span>
-            <span className="text-xs text-gray-500 mt-1 uppercase tracking-wider font-medium">{user?.role?.name}</span>
+            <span className="text-xs text-gray-500 mt-1 uppercase tracking-wider font-medium">
+              {user?.role?.name === 'DEPARTMENT ADMIN' && user?.department?.code 
+                ? `${user.department.code} Admin` 
+                : user?.role?.name === 'SUPER ADMIN' ? 'Super Admin' : user?.role?.name}
+            </span>
           </div>
         </div>
         <button onClick={logout} className="flex items-center justify-between w-full px-2 text-sm text-red-500 font-medium hover:text-red-600 transition-colors">

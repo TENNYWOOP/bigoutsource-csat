@@ -1,6 +1,22 @@
 version: '3.8'
 
 services:
+  db:
+    image: postgres:15-alpine
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_DB=csat_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 3s
+      timeout: 3s
+      retries: 10
+
   backend:
     build:
       context: ./backend
@@ -8,22 +24,26 @@ services:
     ports:
       - "3001:3001"
     environment:
-      - NODE_ENV=development
+      - NODE_ENV=production
       - PORT=3001
-    volumes:
-      - ./backend:/usr/src/app
-      - /usr/src/app/node_modules
-    command: sh -c "npx prisma generate && npm run dev"
+      - DATABASE_URL=postgresql://postgres:postgres@db:5432/csat_db?schema=public
+    # Removed volume mounts for source code so we use the built image
+    depends_on:
+      db:
+        condition: service_healthy
+    # Running db push in the command for the demo to auto-migrate the database
+    command: sh -c "npx prisma generate && npx prisma db push --accept-data-loss && npm run start"
 
   frontend:
     build:
       context: ./frontend
       dockerfile: Dockerfile
     ports:
-      - "5173:5173"
+      - "5173:80" # Map host port 5173 to Nginx port 80
     environment:
-      - NODE_ENV=development
-    volumes:
-      - ./frontend:/usr/src/app
-      - /usr/src/app/node_modules
-    command: npm run dev -- --host
+      - NODE_ENV=production
+      - DOMAIN_NAME=localhost 10.10.60.3
+    # Removed volume mounts
+
+volumes:
+  pgdata:

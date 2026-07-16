@@ -23,7 +23,7 @@ interface Section {
 }
 
 export function Surveys() {
-  const { canManage } = useAuth();
+  const { user, canManage, isGlobal } = useAuth();
   const toast = useToast();
   const [campaignsList, setCampaignsList] = useState<any[]>([]);
   const [departments, setDepartments] = useState<any[]>([]);
@@ -49,11 +49,14 @@ export function Surveys() {
   const [selectedDeptId, setSelectedDeptId] = useState('');
 
   const [sections, setSections] = useState<Section[]>([
-    { id: 's1', title: 'Respondent Information', order: 1 }
+    { id: 's1', title: 'Transaction Details', order: 1 }
   ]);
   
   const [questions, setQuestions] = useState<Question[]>([
-    { id: 'q1', type_id: 'short-text', label: 'Email Address', required: true, section_id: 's1', question_order: 1 }
+    { id: 'q1', type_id: 'date', label: 'Date of Transaction', required: true, section_id: 's1', question_order: 1 },
+    { id: 'q2', type_id: 'short-text', label: 'Full Name', required: true, section_id: 's1', question_order: 2 },
+    { id: 'q3', type_id: 'personnel-dropdown', label: 'Name of IT Personnel', required: true, section_id: 's1', question_order: 3 },
+    { id: 'q4', type_id: 'short-text', label: 'Ticket Number', required: true, section_id: 's1', question_order: 4 }
   ]);
 
   const [activeQuestionId, setActiveQuestionId] = useState<string | null>('q1');
@@ -135,6 +138,20 @@ export function Surveys() {
     setQuestions(questions.filter(q => q.id !== id));
   };
 
+  const resetForm = () => {
+    setIsCreating(false);
+    setEditingSurveyId(null);
+    setSurveyTitle('');
+    setSurveyDesc('');
+    setSections([{ id: 's1', title: 'Transaction Details', order: 1 }]);
+    setQuestions([
+      { id: 'q1', type_id: 'date', label: 'Date of Transaction', required: true, section_id: 's1', question_order: 1 },
+      { id: 'q2', type_id: 'short-text', label: 'Full Name', required: true, section_id: 's1', question_order: 2 },
+      { id: 'q3', type_id: 'personnel-dropdown', label: 'Name of IT Personnel', required: true, section_id: 's1', question_order: 3 },
+      { id: 'q4', type_id: 'short-text', label: 'Ticket Number', required: true, section_id: 's1', question_order: 4 }
+    ]);
+  };
+
   const handleLaunchCampaign = async (status: 'ACTIVE' | 'DRAFT') => {
     if (!surveyTitle.trim()) {
       toast.error('Please enter a survey title.');
@@ -156,7 +173,7 @@ export function Surveys() {
       title: surveyTitle.trim(),
       description: surveyDesc.trim(),
       status,
-      department_id: selectedDeptId,
+      department_id: isGlobal() ? selectedDeptId : user?.department_id,
       sections: payloadSections
     };
 
@@ -173,12 +190,8 @@ export function Surveys() {
       setCampaignsList(updated);
       setIsClosing(true);
       setTimeout(() => {
-        setIsCreating(false);
+        resetForm();
         setIsClosing(false);
-        setEditingSurveyId(null);
-        setSurveyTitle(''); setSurveyDesc('');
-        setSections([{ id: 's1', title: 'Respondent Information', order: 1 }]);
-        setQuestions([{ id: 'q1', type_id: 'short-text', label: 'Email Address', required: true, section_id: 's1', question_order: 1 }]);
       }, 200);
     } catch (err: any) {
       toast.error(err.message || 'Failed to save survey campaign');
@@ -408,6 +421,48 @@ export function Surveys() {
             </div>
           )}
         </div>
+
+        {/* Delete Confirmation Modal */}
+        {deletingSurveyId && (
+          <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4">
+            <div className="bg-white rounded-2xl w-full max-w-md shadow-2xl p-6">
+              <h3 className="text-xl font-bold text-gray-900 mb-2">Delete Survey</h3>
+              <p className="text-gray-500 text-sm mb-6">
+                This action cannot be undone. All responses associated with this survey will be permanently deleted.
+              </p>
+              
+              <div className="mb-6">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Type <span className="font-bold text-gray-900 select-none bg-gray-100 px-1.5 py-0.5 rounded">{viewingSurvey?.title}</span> to confirm.
+                </label>
+                <input 
+                  type="text" 
+                  value={deleteConfirmationText}
+                  onChange={e => setDeleteConfirmationText(e.target.value)}
+                  className="w-full px-4 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-red-500/20 focus:border-red-500 transition-all"
+                  placeholder="Survey title..."
+                />
+              </div>
+              
+              <div className="flex justify-end gap-3">
+                <button 
+                  onClick={() => { setDeletingSurveyId(null); setDeleteConfirmationText(''); }} 
+                  className="px-4 py-2 text-sm font-semibold text-gray-600 hover:bg-gray-50 rounded-lg transition-colors"
+                >
+                  Cancel
+                </button>
+                <button 
+                  onClick={executeDeleteCampaign}
+                  disabled={deleteConfirmationText !== viewingSurvey?.title}
+                  className="px-4 py-2 text-sm font-semibold text-white bg-red-600 hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed rounded-lg transition-all"
+                >
+                  Confirm Delete
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
       </div>
     );
   }
@@ -512,9 +567,15 @@ export function Surveys() {
                     <div className="flex items-center gap-2 text-xs font-semibold text-gray-400 uppercase tracking-wider">
                       <Building className="w-4 h-4" /> Target Department
                     </div>
-                    <select value={selectedDeptId} onChange={e => setSelectedDeptId(e.target.value)} className="px-3 py-1.5 bg-gray-50 border border-gray-200 rounded-lg text-sm font-semibold text-gray-700">
-                      {departments.map(d => <option key={d.id} value={d.id}>{d.name}</option>)}
-                    </select>
+                    {isGlobal() ? (
+                      <select value={selectedDeptId} onChange={e => setSelectedDeptId(e.target.value)} className="px-3 py-1.5 bg-gray-50 border border-gray-200 rounded-lg text-sm font-semibold text-gray-700">
+                        {departments.map(d => <option key={d.id} value={d.id}>{d.name}</option>)}
+                      </select>
+                    ) : (
+                      <div className="px-3 py-1.5 bg-gray-50 border border-gray-200 rounded-lg text-sm font-semibold text-gray-700">
+                        {user?.department?.name || departments.find(d => d.id === user?.department_id)?.name || 'Your Department'}
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>
@@ -594,46 +655,6 @@ export function Surveys() {
         </div>
       )}
 
-      {/* Delete Confirmation Modal */}
-      {deletingSurveyId && (
-        <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl w-full max-w-md shadow-2xl p-6">
-            <h3 className="text-xl font-bold text-gray-900 mb-2">Delete Survey</h3>
-            <p className="text-gray-500 text-sm mb-6">
-              This action cannot be undone. All responses associated with this survey will be permanently deleted.
-            </p>
-            
-            <div className="mb-6">
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Type <span className="font-bold text-gray-900 select-none bg-gray-100 px-1.5 py-0.5 rounded">{viewingSurvey?.title}</span> to confirm.
-              </label>
-              <input 
-                type="text" 
-                value={deleteConfirmationText}
-                onChange={e => setDeleteConfirmationText(e.target.value)}
-                className="w-full px-4 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-red-500/20 focus:border-red-500 transition-all"
-                placeholder="Survey title..."
-              />
-            </div>
-            
-            <div className="flex justify-end gap-3">
-              <button 
-                onClick={() => { setDeletingSurveyId(null); setDeleteConfirmationText(''); }} 
-                className="px-4 py-2 text-sm font-semibold text-gray-600 hover:bg-gray-50 rounded-lg transition-colors"
-              >
-                Cancel
-              </button>
-              <button 
-                onClick={executeDeleteCampaign}
-                disabled={deleteConfirmationText !== viewingSurvey?.title}
-                className="px-4 py-2 text-sm font-semibold text-white bg-red-600 hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed rounded-lg transition-all"
-              >
-                Confirm Delete
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 }
