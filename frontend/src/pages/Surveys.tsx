@@ -134,7 +134,16 @@ export function Surveys() {
       section_id: sectionId,
       question_order: questions.filter(q => q.section_id === sectionId).length + 1
     };
-    setQuestions([...questions, newQ]);
+    
+    const feedbackIdx = questions.findIndex(q => q.section_id === sectionId && q.isFixed && q.label.toLowerCase().includes('feedback'));
+    if (feedbackIdx !== -1) {
+      const newQuestions = [...questions];
+      newQuestions.splice(feedbackIdx, 0, newQ);
+      setQuestions(newQuestions);
+    } else {
+      setQuestions([...questions, newQ]);
+    }
+    
     setActiveQuestionId(newQ.id);
   };
 
@@ -170,11 +179,11 @@ export function Surveys() {
     const payloadSections = sections.map(s => ({
       title: s.title,
       section_order: s.order,
-      questions: questions.filter(q => q.section_id === s.id).map(q => ({
+      questions: questions.filter(q => q.section_id === s.id).map((q, idx) => ({
         type_id: q.type_id,
         label: q.label,
         required: q.required,
-        question_order: q.question_order,
+        question_order: idx + 1,
         config: q.isFixed ? JSON.stringify({ isFixed: true }) : '{}'
       }))
     }));
@@ -243,7 +252,7 @@ export function Surveys() {
     viewingSurvey.sections?.forEach((s: any) => {
       const sId = `s_${s.id}`;
       newSections.push({ id: sId, title: s.title, order: s.section_order });
-      s.questions?.forEach((q: any) => {
+      s.questions?.sort((a: any, b: any) => a.question_order - b.question_order).forEach((q: any) => {
         let isFixed = false;
         try {
           const config = JSON.parse(q.config || '{}');
