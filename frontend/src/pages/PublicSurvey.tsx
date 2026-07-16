@@ -66,7 +66,7 @@ export function PublicSurvey() {
         return (
           <textarea
             placeholder="Type your response here..."
-            className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all text-gray-800 dark:text-slate-100 min-h-[100px]"
+            className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all text-gray-900 min-h-[100px]"
             value={value}
             onChange={(e) => onChange(e.target.value)}
           />
@@ -75,7 +75,7 @@ export function PublicSurvey() {
         return (
           <input
             type="date"
-            className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all text-gray-800 dark:text-slate-100"
+            className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all text-gray-900"
             value={value}
             onChange={(e) => onChange(e.target.value)}
           />
@@ -84,13 +84,13 @@ export function PublicSurvey() {
         const personnelList = survey?.department?.users || [];
         return (
           <select
-            className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all text-gray-800 dark:text-slate-100"
+            className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all text-gray-900"
             value={value}
             onChange={(e) => onChange(e.target.value)}
           >
             <option value="">-- Select Personnel --</option>
             {personnelList.map((p: any) => (
-              <option key={p.id} value={p.id}>{p.name} ({p.email})</option>
+              <option key={p.id} value={p.id}>{p.name}</option>
             ))}
           </select>
         );
@@ -131,7 +131,7 @@ export function PublicSurvey() {
           <input
             type="text"
             placeholder="Your answer..."
-            className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all text-gray-800 dark:text-slate-100"
+            className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all text-gray-900"
             value={value}
             onChange={(e) => onChange(e.target.value)}
           />

@@ -254,44 +254,49 @@ app.get('/api/surveys', requireRole(['SUPER ADMIN', 'DEPARTMENT ADMIN', 'PERSONN
 });
 
 app.post('/api/surveys', requireRole(['SUPER ADMIN', 'DEPARTMENT ADMIN']), async (req: any, res: any) => {
-  const { title, description, status, department_id, sections } = req.body;
+  try {
+    const { title, description, status, department_id, sections } = req.body;
 
-  if (!req.user.role.is_global && department_id !== req.user.department_id) {
-    return res.status(403).json({ error: 'Cannot create survey for other departments' });
-  }
-
-  let baseSlug = title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)+/g, '');
-  if (!baseSlug) baseSlug = 'survey';
-  
-  let slug = baseSlug;
-  let counter = 1;
-  while (await prisma.survey.findUnique({ where: { slug } })) {
-    slug = `${baseSlug}-${counter++}`;
-  }
-
-  const survey = await prisma.survey.create({
-    data: {
-      title, description, status, department_id, created_by: req.user.id, slug,
-      sections: {
-        create: sections.map((s: any) => ({
-          title: s.title,
-          section_order: s.section_order,
-          questions: {
-            create: s.questions.map((q: any) => ({
-              type_id: q.type_id,
-              label: q.label,
-              required: q.required,
-              question_order: q.question_order,
-              config: q.config || '{}'
-            }))
-          }
-        }))
-      }
+    if (!req.user.role.is_global && department_id !== req.user.department_id) {
+      return res.status(403).json({ error: 'Cannot create survey for other departments' });
     }
-  });
 
-  await logAudit(req.user.id, department_id, `Launched Survey Campaign: "${title}"`, 'Surveys', req.ip);
-  res.json(survey);
+    let baseSlug = title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)+/g, '');
+    if (!baseSlug) baseSlug = 'survey';
+    
+    let slug = baseSlug;
+    let counter = 1;
+    while (await prisma.survey.findUnique({ where: { slug } })) {
+      slug = `${baseSlug}-${counter++}`;
+    }
+
+    const survey = await prisma.survey.create({
+      data: {
+        title, description, status, department_id, created_by: req.user.id, slug,
+        sections: {
+          create: sections.map((s: any) => ({
+            title: s.title,
+            section_order: s.section_order,
+            questions: {
+              create: s.questions.map((q: any) => ({
+                type_id: q.type_id,
+                label: q.label,
+                required: q.required,
+                question_order: q.question_order,
+                config: q.config || '{}'
+              }))
+            }
+          }))
+        }
+      }
+    });
+
+    await logAudit(req.user.id, department_id, `Launched Survey Campaign: "${title}"`, 'Surveys', req.ip);
+    res.json(survey);
+  } catch (err: any) {
+    console.error("Error creating survey:", err);
+    res.status(500).json({ error: err.message });
+  }
 });
 
 app.put('/api/surveys/:id', requireRole(['SUPER ADMIN', 'DEPARTMENT ADMIN']), async (req: any, res: any) => {
@@ -379,23 +384,42 @@ app.get('/api/surveys/:id', async (req, res) => {
 // ----------------------------------------------------
 // RESPONSES
 // ----------------------------------------------------
-app.post('/api/surveys/:id/responses', async (req, res) => {
-  const { id } = req.params;
-  const { metadata, answers } = req.body;
-  
-  const response = await prisma.surveyResponse.create({
-    data: {
-      survey_id: id,
-      metadata: metadata ? JSON.stringify(metadata) : '{}',
-      answers: {
-        create: answers.map((a: any) => ({
-          question_id: a.question_id,
-          value: String(a.value)
-        }))
+app.post('/api/surveys/:id/responses', async (req: any, res: any) => {
+  try {
+    const { id } = req.params;
+    const { metadata, answers } = req.body;
+    
+    // Find the survey by ID or Slug to get the real UUID
+    const survey = await prisma.survey.findFirst({
+      where: {
+        OR: [
+          { id },
+          { slug: id }
+        ]
       }
+    });
+
+    if (!survey) {
+      return res.status(404).json({ error: 'Survey not found' });
     }
-  });
-  res.json(response);
+
+    const response = await prisma.surveyResponse.create({
+      data: {
+        survey_id: survey.id,
+        metadata: metadata ? JSON.stringify(metadata) : '{}',
+        answers: {
+          create: answers.map((a: any) => ({
+            question_id: a.question_id,
+            value: String(a.value)
+          }))
+        }
+      }
+    });
+    res.json(response);
+  } catch (err: any) {
+    console.error('Failed to submit response:', err);
+    res.status(500).json({ error: 'Failed to submit response' });
+  }
 });
 
 app.get('/api/surveys/:id/responses', requireRole(['SUPER ADMIN', 'DEPARTMENT ADMIN', 'PERSONNEL']), async (req: any, res: any) => {
