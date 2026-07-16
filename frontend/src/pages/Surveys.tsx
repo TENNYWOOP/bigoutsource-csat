@@ -213,10 +213,10 @@ export function Surveys() {
     }
   };
 
-  const copyToClipboard = (id: string) => {
-    const link = `${window.location.origin}/s/${id}`;
+  const copyToClipboard = (linkId: string) => {
+    const link = `${window.location.origin}/s/${linkId}`;
     navigator.clipboard.writeText(link);
-    setCopiedId(id);
+    setCopiedId(linkId);
     setTimeout(() => setCopiedId(null), 2000);
   };
 
@@ -327,11 +327,11 @@ export function Surveys() {
             <div className="flex items-center gap-3">
               <h2 className="text-2xl font-bold text-gray-900">{viewingSurvey.title}</h2>
               <button 
-                onClick={() => copyToClipboard(viewingSurvey.id)} 
+                onClick={() => copyToClipboard(viewingSurvey.slug || viewingSurvey.id)} 
                 className="flex items-center gap-1.5 px-2.5 py-1 text-xs font-semibold rounded-md border transition-colors bg-white hover:bg-gray-50 border-gray-200 text-gray-600"
               >
-                {copiedId === viewingSurvey.id ? <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500" /> : <LinkIcon className="w-3.5 h-3.5" />}
-                {copiedId === viewingSurvey.id ? <span className="text-emerald-600">Copied!</span> : 'Copy Public Link'}
+                {copiedId === (viewingSurvey.slug || viewingSurvey.id) ? <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500" /> : <LinkIcon className="w-3.5 h-3.5" />}
+                {copiedId === (viewingSurvey.slug || viewingSurvey.id) ? <span className="text-emerald-600">Copied!</span> : 'Copy Public Link'}
               </button>
             </div>
             <p className="text-gray-500 text-sm mt-1">Dept: {viewingSurvey.department?.name} • Status: {viewingSurvey.status}</p>

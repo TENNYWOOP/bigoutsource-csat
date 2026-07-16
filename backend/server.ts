@@ -260,9 +260,18 @@ app.post('/api/surveys', requireRole(['SUPER ADMIN', 'DEPARTMENT ADMIN']), async
     return res.status(403).json({ error: 'Cannot create survey for other departments' });
   }
 
+  let baseSlug = title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)+/g, '');
+  if (!baseSlug) baseSlug = 'survey';
+  
+  let slug = baseSlug;
+  let counter = 1;
+  while (await prisma.survey.findUnique({ where: { slug } })) {
+    slug = `${baseSlug}-${counter++}`;
+  }
+
   const survey = await prisma.survey.create({
     data: {
-      title, description, status, department_id, created_by: req.user.id,
+      title, description, status, department_id, created_by: req.user.id, slug,
       sections: {
         create: sections.map((s: any) => ({
           title: s.title,
@@ -344,8 +353,13 @@ app.delete('/api/surveys/:id', requireRole(['SUPER ADMIN', 'DEPARTMENT ADMIN']),
 });
 
 app.get('/api/surveys/:id', async (req, res) => {
-  const survey = await prisma.survey.findUnique({
-    where: { id: req.params.id },
+  const survey = await prisma.survey.findFirst({
+    where: { 
+      OR: [
+        { id: req.params.id },
+        { slug: req.params.id }
+      ]
+    },
     include: {
       sections: {
         include: { questions: { include: { type: true } } }
