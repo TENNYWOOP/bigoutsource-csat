@@ -214,7 +214,7 @@ export function PublicSurvey() {
                 onClick={handleBack} 
                 className="px-6 py-2.5 rounded-xl font-semibold text-gray-600 bg-white border border-gray-200 shadow-sm hover:bg-gray-50 transition-colors"
               >
-                Back
+                Previous Page
               </button>
             ) : <div></div>}
 
@@ -224,7 +224,7 @@ export function PublicSurvey() {
                 onClick={handleNext} 
                 className="bg-blue-600 hover:bg-blue-700 text-white px-8 py-2.5 rounded-xl font-bold shadow-md transition-colors"
               >
-                Next
+                Next Page
               </button>
             ) : (
               <button 
