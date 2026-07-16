@@ -1,4 +1,4 @@
-import { Search, UserPlus, Edit2, Trash2, X, Sparkles, RotateCcw, Building, ArrowUpDown, ArrowUp, ArrowDown, Users } from 'lucide-react';
+import { Search, UserPlus, Edit2, Trash2, X, Sparkles, RotateCcw, Building, ArrowUpDown, ArrowUp, ArrowDown, Users, ChevronDown, Shield, ShieldAlert, UserCheck, ShieldCheck, List } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { api } from '../lib/api';
 import { useAuth } from '../lib/auth';
@@ -212,101 +212,144 @@ export function Personnel() {
     else setDeptSortDirection('asc');
   };
 
+  const totalAccounts = personnel.length;
+  const totalSuperAdmins = personnel.filter(p => p.role?.name === 'SUPER ADMIN').length;
+  const totalAdmins = personnel.filter(p => p.role?.name === 'DEPARTMENT ADMIN').length;
+  const totalAgents = personnel.filter(p => p.role?.name === 'PERSONNEL').length;
+
   return (
-    <div className="h-full max-w-6xl mx-auto relative">
-      <div className="flex justify-between items-start mb-6">
-        <div>
-          <div className="flex items-center gap-3 mb-2">
-            <h2 className="text-2xl font-bold text-gray-900">Personnel Directory</h2>
-          </div>
-          <p className="text-gray-500 text-sm">Assign agents, manage roles, and review departments.</p>
+    <div className="h-full w-full">
+      {/* Pill Tabs */}
+      <div className="flex items-center mb-6">
+        <div className="bg-white rounded-xl p-1.5 flex shadow-sm border border-gray-100/60">
+          <button 
+            onClick={() => setActiveTab('Members')}
+            className={`px-6 py-2 rounded-lg text-[13px] font-bold transition-all ${activeTab === 'Members' ? 'bg-[#15233E] text-white shadow-sm' : 'text-gray-500 hover:text-gray-900'}`}
+          >
+            Members
+          </button>
+          {isGlobal() && (
+            <button 
+              onClick={() => setActiveTab('Departments')}
+              className={`px-6 py-2 rounded-lg text-[13px] font-bold transition-all ${activeTab === 'Departments' ? 'bg-[#15233E] text-white shadow-sm' : 'text-gray-500 hover:text-gray-900'}`}
+            >
+              Departments
+            </button>
+          )}
         </div>
-        
-        <div className="flex items-center gap-2">
+      </div>
+
+      <div className="flex items-center justify-between gap-4 mb-6">
+        <div className="relative flex-1">
+          <Search className="w-4 h-4 absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
+          <input type="text" placeholder="Search accounts..." className="w-full pl-11 pr-4 py-3 bg-white border border-gray-100 shadow-sm rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 transition-all font-medium text-gray-700" />
+        </div>
+        <div className="flex items-center gap-3">
+          <div className="relative">
+            <select value={selectedDept} onChange={e => setSelectedDept(e.target.value)} className="appearance-none bg-white border border-gray-100 shadow-sm text-gray-700 text-xs font-bold rounded-xl pl-5 pr-10 py-3 cursor-pointer outline-none hover:bg-gray-50 transition-colors">
+              <option value="All Departments">All Departments</option>
+              {departments.map(d => <option key={d.id} value={d.name}>{d.name}</option>)}
+            </select>
+            <ChevronDown className="w-4 h-4 text-gray-400 absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none" />
+          </div>
+          
+          <button className="bg-white border border-gray-100 shadow-sm text-gray-700 text-xs font-bold rounded-xl px-5 py-3 cursor-pointer outline-none hover:bg-gray-50 flex items-center gap-2 transition-colors">
+            All Statuses <ChevronDown className="w-4 h-4 text-gray-400" />
+          </button>
+          
           {activeTab === 'Members' && canManage() && (
-            <button onClick={() => setShowProvisionModal(true)} className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-5 py-2.5 rounded-lg text-sm font-semibold transition-colors shadow-sm shadow-blue-200">
-              <UserPlus className="w-4 h-4" /> Provision New Personnel
+            <button onClick={() => setShowProvisionModal(true)} className="flex items-center gap-2 bg-[#15233E] hover:bg-[#1a2b4c] text-white px-6 py-3 rounded-xl text-xs font-bold transition-colors shadow-sm ml-2">
+              <UserPlus className="w-4 h-4" /> Register Account
             </button>
           )}
           {activeTab === 'Departments' && isGlobal() && (
-            <button onClick={() => setShowDeptModal(true)} className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-5 py-2.5 rounded-lg text-sm font-semibold transition-colors shadow-sm shadow-blue-200">
+            <button onClick={() => setShowDeptModal(true)} className="flex items-center gap-2 bg-[#15233E] hover:bg-[#1a2b4c] text-white px-6 py-3 rounded-xl text-xs font-bold transition-colors shadow-sm ml-2">
               <Building className="w-4 h-4" /> Add Department
             </button>
           )}
         </div>
       </div>
 
-      <div className="flex gap-6 border-b border-gray-200 mb-8">
-        <button 
-          onClick={() => setActiveTab('Members')}
-          className={`pb-4 text-sm font-semibold transition-colors relative ${activeTab === 'Members' ? 'text-blue-600' : 'text-gray-500 hover:text-gray-900'}`}
-        >
-          Members
-          {activeTab === 'Members' && <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-blue-600 rounded-t-full"></div>}
-        </button>
-        {isGlobal() && (
-          <button 
-            onClick={() => setActiveTab('Departments')}
-            className={`pb-4 text-sm font-semibold transition-colors relative ${activeTab === 'Departments' ? 'text-blue-600' : 'text-gray-500 hover:text-gray-900'}`}
-          >
-            Departments
-            {activeTab === 'Departments' && <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-blue-600 rounded-t-full"></div>}
-          </button>
-        )}
-      </div>
-
       {activeTab === 'Members' && (
-      <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
-        <div className="flex items-center justify-between mb-6">
-          <div className="relative w-96">
-            <Search className="w-5 h-5 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-            <input type="text" placeholder="Search by name, role or email..." className="w-full pl-10 pr-4 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all" />
+      <>
+        {/* Metric Cards */}
+        <div className="grid grid-cols-4 gap-5 mb-6">
+          <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-5 flex items-center gap-4 hover:shadow-md transition-shadow">
+            <div className="w-12 h-12 rounded-2xl bg-emerald-50 text-emerald-500 flex items-center justify-center shrink-0">
+              <Users className="w-5 h-5" />
+            </div>
+            <div>
+              <div className="font-bold text-gray-900 text-[13px] leading-tight">Active Accounts</div>
+              <div className="text-[11px] text-gray-400 font-bold uppercase tracking-wider mt-0.5">{totalAccounts} TOTAL</div>
+            </div>
           </div>
-          
-          <div className="flex items-center gap-3">
-            <span className="text-sm font-medium text-gray-500">Filter Dept:</span>
-            <select value={selectedDept} onChange={e => setSelectedDept(e.target.value)} className="bg-gray-50 border border-gray-200 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block px-3 py-2 font-medium cursor-pointer">
-              <option value="All Departments">All Departments</option>
-              {departments.map(d => <option key={d.id} value={d.name}>{d.name}</option>)}
-            </select>
+          <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-5 flex items-center gap-4 hover:shadow-md transition-shadow">
+            <div className="w-12 h-12 rounded-2xl bg-gray-50 text-gray-600 flex items-center justify-center shrink-0 border border-gray-100">
+              <Shield className="w-5 h-5" />
+            </div>
+            <div>
+              <div className="font-bold text-gray-900 text-[13px] leading-tight">Super Admins</div>
+              <div className="text-[11px] text-gray-400 font-bold uppercase tracking-wider mt-0.5">{totalSuperAdmins} TOTAL</div>
+            </div>
+          </div>
+          <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-5 flex items-center gap-4 hover:shadow-md transition-shadow">
+            <div className="w-12 h-12 rounded-2xl bg-blue-50 text-blue-500 flex items-center justify-center shrink-0">
+              <ShieldAlert className="w-5 h-5" />
+            </div>
+            <div>
+              <div className="font-bold text-gray-900 text-[13px] leading-tight">Admins</div>
+              <div className="text-[11px] text-gray-400 font-bold uppercase tracking-wider mt-0.5">{totalAdmins} TOTAL</div>
+            </div>
+          </div>
+          <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-5 flex items-center gap-4 hover:shadow-md transition-shadow">
+            <div className="w-12 h-12 rounded-2xl bg-purple-50 text-purple-500 flex items-center justify-center shrink-0">
+              <UserCheck className="w-5 h-5" />
+            </div>
+            <div>
+              <div className="font-bold text-gray-900 text-[13px] leading-tight">Viewers</div>
+              <div className="text-[11px] text-gray-400 font-bold uppercase tracking-wider mt-0.5">{totalAgents} TOTAL</div>
+            </div>
           </div>
         </div>
+
+      <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-0 overflow-hidden">
 
         <div className="overflow-x-auto">
           <table className="w-full text-left border-collapse">
             <thead>
-              <tr className="border-b border-gray-100">
-                <th className="px-4 py-4 text-xs font-bold text-gray-500 dark:text-slate-200 uppercase tracking-wider">
+              <tr className="border-b border-gray-100 bg-white">
+                <th className="px-6 py-4 text-[10px] font-bold text-gray-400 uppercase tracking-widest">
                   <div className="flex items-center gap-1.5 cursor-pointer hover:text-gray-600 transition-colors w-max" onClick={() => handleSort('name')}>
-                    Team Operator
+                    USER
                     {sortConfig.key === 'name' ? (
-                      sortConfig.direction === 'asc' ? <ArrowUp className="w-3.5 h-3.5 text-blue-600" /> : <ArrowDown className="w-3.5 h-3.5 text-blue-600" />
+                      sortConfig.direction === 'asc' ? <ArrowUp className="w-3 h-3 text-blue-600" /> : <ArrowDown className="w-3 h-3 text-blue-600" />
                     ) : (
-                      <ArrowUpDown className="w-3.5 h-3.5 opacity-50" />
+                      <ArrowUpDown className="w-3 h-3 opacity-50" />
                     )}
                   </div>
                 </th>
-                <th className="px-4 py-4 text-xs font-bold text-gray-500 dark:text-slate-200 uppercase tracking-wider">
+                <th className="px-6 py-4 text-[10px] font-bold text-gray-400 uppercase tracking-widest">
                   <div className="flex items-center gap-1.5 cursor-pointer hover:text-gray-600 transition-colors w-max" onClick={() => handleSort('department')}>
-                    Department & Role
+                    ROLE
                     {sortConfig.key === 'department' ? (
-                      sortConfig.direction === 'asc' ? <ArrowUp className="w-3.5 h-3.5 text-blue-600" /> : <ArrowDown className="w-3.5 h-3.5 text-blue-600" />
+                      sortConfig.direction === 'asc' ? <ArrowUp className="w-3 h-3 text-blue-600" /> : <ArrowDown className="w-3 h-3 text-blue-600" />
                     ) : (
-                      <ArrowUpDown className="w-3.5 h-3.5 opacity-50" />
+                      <ArrowUpDown className="w-3 h-3 opacity-50" />
                     )}
                   </div>
                 </th>
-                <th className="px-4 py-4 text-xs font-bold text-gray-500 dark:text-slate-200 uppercase tracking-wider">
+                <th className="px-6 py-4 text-[10px] font-bold text-gray-400 uppercase tracking-widest">
                   <div className="flex items-center gap-1.5 cursor-pointer hover:text-gray-600 transition-colors w-max" onClick={() => handleSort('email')}>
-                    Email Contact
+                    DEPARTMENT
                     {sortConfig.key === 'email' ? (
-                      sortConfig.direction === 'asc' ? <ArrowUp className="w-3.5 h-3.5 text-blue-600" /> : <ArrowDown className="w-3.5 h-3.5 text-blue-600" />
+                      sortConfig.direction === 'asc' ? <ArrowUp className="w-3 h-3 text-blue-600" /> : <ArrowDown className="w-3 h-3 text-blue-600" />
                     ) : (
-                      <ArrowUpDown className="w-3.5 h-3.5 opacity-50" />
+                      <ArrowUpDown className="w-3 h-3 opacity-50" />
                     )}
                   </div>
                 </th>
-                <th className="px-4 py-4 text-xs font-bold text-gray-500 dark:text-slate-200 uppercase tracking-wider text-right">Administrative</th>
+                <th className="px-6 py-4 text-[10px] font-bold text-gray-400 uppercase tracking-widest">STATUS</th>
+                <th className="px-6 py-4 text-[10px] font-bold text-gray-400 uppercase tracking-widest text-right"></th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-50">
@@ -314,11 +357,11 @@ export function Personnel() {
               {!loading && filteredPersonnel.map((person) => {
                 const isEditing = editingId === person.id;
                 return (
-                  <tr key={person.id} className="hover:bg-gray-50/50 transition-colors">
-                    <td className="px-4 py-4">
+                  <tr key={person.id} className="hover:bg-gray-50/30 transition-colors group">
+                    <td className="px-6 py-4">
                       <div className="flex items-center gap-4">
-                        <div className="w-10 h-10 rounded-full bg-blue-50 text-blue-600 font-bold flex items-center justify-center text-sm border border-blue-100">
-                          {person.name?.charAt(0) || 'U'}
+                        <div className="w-10 h-10 rounded-full bg-gray-50 text-gray-700 font-bold flex items-center justify-center text-sm border border-gray-200 shadow-sm shrink-0">
+                          {person.name?.split(' ').map((n: string) => n[0]).join('').substring(0, 2).toUpperCase() || 'U'}
                         </div>
                         {isEditing ? (
                           <div className="flex-1 min-w-[150px]">
@@ -328,56 +371,60 @@ export function Personnel() {
                               onChange={e => setEditName(e.target.value)} 
                               className="w-full px-3 py-1.5 text-sm border border-gray-300 dark:border-slate-700/80 rounded-xl focus:outline-none focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 bg-white dark:bg-slate-900 text-gray-900 dark:text-slate-100 placeholder-gray-400 dark:placeholder-slate-500 transition-all duration-200"
                             />
-                            <div className="text-xs text-gray-400 dark:text-slate-400 font-medium mt-1.5">ID: {person.id.split('-')[0]}</div>
+                            <div className="text-[10px] text-gray-400 font-bold uppercase tracking-wide mt-1.5">{person.email}</div>
                           </div>
                         ) : (
                           <div>
                             <div className="font-bold text-gray-900 text-sm">{person.name}</div>
-                            <div className="text-xs text-gray-400 font-medium">
-                              {person.job_title || `ID: ${person.id.split('-')[0]}`}
-                            </div>
+                            <div className="text-[10px] text-gray-400 font-bold uppercase tracking-wide mt-0.5">{person.email}</div>
                           </div>
                         )}
                       </div>
                     </td>
-                    <td className="px-4 py-4">
+                    <td className="px-6 py-4">
                       {isEditing ? (
-                        <div className="space-y-2 min-w-[150px]">
-                          <select 
-                            value={editRoleId} 
-                            onChange={e => setEditRoleId(e.target.value)} 
-                            className="w-full px-3 py-1.5 text-xs border border-gray-300 dark:border-slate-700/80 rounded-xl focus:outline-none focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 bg-white dark:bg-slate-900 text-gray-900 dark:text-slate-100 transition-all duration-200 cursor-pointer"
-                          >
-                            {roles.map(r => (
-                              <option key={r.id} value={r.id} className="bg-white dark:bg-slate-900 text-gray-900 dark:text-slate-100">{r.name}</option>
-                            ))}
-                          </select>
-                          <select 
-                            value={editDeptId} 
-                            onChange={e => setEditDeptId(e.target.value)} 
-                            className="w-full px-3 py-1.5 text-xs border border-gray-300 dark:border-slate-700/80 rounded-xl focus:outline-none focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 bg-white dark:bg-slate-900 text-gray-900 dark:text-slate-100 transition-all duration-200 cursor-pointer"
-                          >
-                            <option value="" className="bg-white dark:bg-slate-900 text-gray-900 dark:text-slate-100">Global Access</option>
-                            {departments.map(d => (
-                              <option key={d.id} value={d.id} className="bg-white dark:bg-slate-900 text-gray-900 dark:text-slate-100">{d.name}</option>
-                            ))}
-                          </select>
-                        </div>
+                        <select 
+                          value={editRoleId} 
+                          onChange={e => setEditRoleId(e.target.value)} 
+                          className="w-full px-3 py-1.5 text-xs border border-gray-300 dark:border-slate-700/80 rounded-xl focus:outline-none focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 bg-white dark:bg-slate-900 text-gray-900 dark:text-slate-100 transition-all duration-200 cursor-pointer"
+                        >
+                          {roles.map(r => (
+                            <option key={r.id} value={r.id} className="bg-white dark:bg-slate-900 text-gray-900 dark:text-slate-100">{r.name}</option>
+                          ))}
+                        </select>
                       ) : (
-                        <>
-                          <div className="font-bold text-gray-900 text-sm">
+                        <div className="flex items-center gap-2">
+                          <ShieldCheck className="w-3.5 h-3.5 text-gray-400" />
+                          <span className="font-bold text-gray-600 text-[11px] uppercase tracking-wider">
                             {person.role?.name === 'DEPARTMENT ADMIN' && person.department?.code 
-                              ? `${person.department.code} Admin`.toUpperCase() 
+                              ? `${person.department.code} ADMIN` 
                               : person.role?.name}
-                          </div>
-                          <div className="text-xs text-gray-500 mt-0.5">{person.department?.name || 'Global Access'}</div>
-                        </>
+                          </span>
+                        </div>
                       )}
                     </td>
-                    <td className="px-4 py-4">
-                      <div className="text-sm text-gray-500">{person.email}</div>
+                    <td className="px-6 py-4">
+                      {isEditing ? (
+                        <select 
+                          value={editDeptId} 
+                          onChange={e => setEditDeptId(e.target.value)} 
+                          className="w-full px-3 py-1.5 text-xs border border-gray-300 dark:border-slate-700/80 rounded-xl focus:outline-none focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 bg-white dark:bg-slate-900 text-gray-900 dark:text-slate-100 transition-all duration-200 cursor-pointer"
+                        >
+                          <option value="" className="bg-white dark:bg-slate-900 text-gray-900 dark:text-slate-100">Global Access</option>
+                          {departments.map(d => (
+                            <option key={d.id} value={d.id} className="bg-white dark:bg-slate-900 text-gray-900 dark:text-slate-100">{d.name}</option>
+                          ))}
+                        </select>
+                      ) : (
+                        <span className="font-semibold text-gray-700 text-[13px]">
+                          {person.department?.name || 'Global Access'}
+                        </span>
+                      )}
                     </td>
-                    <td className="px-4 py-4">
+                    <td className="px-6 py-4">
+                      <span className="text-[10px] font-bold text-emerald-600 uppercase tracking-wider">ACTIVE</span>
+                    </td>
+                    <td className="px-6 py-4">
                       {isEditing ? (
                         <div className="flex items-center justify-end gap-2 text-xs font-semibold">
                           <button 
@@ -394,20 +441,34 @@ export function Personnel() {
                           </button>
                         </div>
                       ) : (
-                        <div className="flex items-center justify-end gap-2">
+                        <div className="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
                           {canManage() && (
                             <>
                               <button 
                                 onClick={() => handleStartEdit(person)}
-                                className="w-8 h-8 rounded-full flex items-center justify-center text-gray-400 hover:text-blue-600 hover:bg-blue-50 transition-colors cursor-pointer"
+                                className="w-8 h-8 rounded-lg border border-gray-200 flex items-center justify-center text-gray-400 hover:text-blue-600 hover:border-blue-200 transition-colors bg-white shadow-sm"
+                                title="Edit"
                               >
-                                <Edit2 className="w-4 h-4" />
+                                <Edit2 className="w-3.5 h-3.5" />
+                              </button>
+                              <button 
+                                className="w-8 h-8 rounded-lg border border-gray-200 flex items-center justify-center text-gray-400 hover:text-gray-600 hover:border-gray-300 transition-colors bg-white shadow-sm"
+                                title="View Details"
+                              >
+                                <List className="w-3.5 h-3.5" />
+                              </button>
+                              <button 
+                                className="w-8 h-8 rounded-lg border border-gray-200 flex items-center justify-center text-gray-400 hover:text-gray-600 hover:border-gray-300 transition-colors bg-white shadow-sm"
+                                title="Re-assign"
+                              >
+                                <UserPlus className="w-3.5 h-3.5" />
                               </button>
                               <button 
                                 onClick={() => handleDeletePersonnel(person.id, person.name)}
-                                className="w-8 h-8 rounded-full flex items-center justify-center text-gray-400 hover:text-red-600 hover:bg-red-50 transition-colors cursor-pointer"
+                                className="w-8 h-8 rounded-lg border border-gray-200 flex items-center justify-center text-gray-400 hover:text-red-600 hover:border-red-200 transition-colors bg-white shadow-sm"
+                                title="Delete"
                               >
-                                <Trash2 className="w-4 h-4" />
+                                <Trash2 className="w-3.5 h-3.5" />
                               </button>
                             </>
                           )}
@@ -421,8 +482,8 @@ export function Personnel() {
           </table>
         </div>
       </div>
+      </>
       )}
-
       {activeTab === 'Departments' && isGlobal() && (
         <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
