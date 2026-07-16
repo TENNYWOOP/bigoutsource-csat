@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { 
-  Plus, Edit2, Trash2, ArrowLeft, Save, Send, Building, Link as LinkIcon, CheckCircle2, Star
+  Plus, Edit2, Trash2, ArrowLeft, Save, Send, Building, Link as LinkIcon, CheckCircle2, Star, PauseCircle, PlayCircle
 } from 'lucide-react';
 import { cn } from '../lib/utils';
 import { api } from '../lib/api';
@@ -232,6 +232,20 @@ export function Surveys() {
     }
   };
 
+  const handleToggleStatus = async () => {
+    if (!viewingSurvey) return;
+    const newStatus = viewingSurvey.status === 'ACTIVE' ? 'INACTIVE' : 'ACTIVE';
+    try {
+      await api.patch(`/surveys/${viewingSurvey.id}/status`, { status: newStatus });
+      toast.success(`Survey ${newStatus === 'INACTIVE' ? 'deactivated' : 'reactivated'} successfully!`);
+      setViewingSurvey({ ...viewingSurvey, status: newStatus });
+      const updated = await api.get('/surveys');
+      setCampaignsList(updated);
+    } catch (e: any) {
+      toast.error(e.message || 'Failed to update survey status');
+    }
+  };
+
   const copyToClipboard = (linkId: string) => {
     const link = `${window.location.origin}/s/${linkId}`;
     navigator.clipboard.writeText(link);
@@ -390,6 +404,23 @@ export function Surveys() {
                       <Edit2 className="w-4 h-4" /> Edit Draft
                     </button>
                   )}
+                  {viewingSurvey.status !== 'DRAFT' && canManage() && (
+                    <button 
+                      onClick={handleToggleStatus} 
+                      className={cn(
+                        "px-4 py-2 text-sm font-semibold rounded-lg flex items-center gap-2 transition-colors",
+                        viewingSurvey.status === 'ACTIVE' 
+                          ? "text-amber-600 bg-amber-50 hover:bg-amber-100" 
+                          : "text-emerald-600 bg-emerald-50 hover:bg-emerald-100"
+                      )}
+                    >
+                      {viewingSurvey.status === 'ACTIVE' ? (
+                        <><PauseCircle className="w-4 h-4" /> Deactivate Survey</>
+                      ) : (
+                        <><PlayCircle className="w-4 h-4" /> Reactivate Survey</>
+                      )}
+                    </button>
+                  )}
                   {canManage() && (
                     <button onClick={() => setDeletingSurveyId(viewingSurvey.id)} className="px-4 py-2 text-sm text-red-600 bg-red-50 hover:bg-red-100 font-semibold rounded-lg flex items-center gap-2">
                       <Trash2 className="w-4 h-4" /> Delete Survey
@@ -522,6 +553,7 @@ export function Surveys() {
               <span className={cn(
                 "text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded",
                 campaign.status === 'ACTIVE' ? "bg-emerald-50 text-emerald-600" :
+                campaign.status === 'INACTIVE' ? "bg-amber-50 text-amber-600" :
                 campaign.status === 'DRAFT' ? "bg-gray-100 text-gray-600" :
                 "bg-red-50 text-red-600"
               )}>

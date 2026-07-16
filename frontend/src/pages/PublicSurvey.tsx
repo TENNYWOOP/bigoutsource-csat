@@ -165,6 +165,18 @@ export function PublicSurvey() {
   if (loading) return <div className="min-h-screen bg-gray-50 flex items-center justify-center">Loading survey...</div>;
   if (!survey) return <div className="min-h-screen bg-gray-50 flex items-center justify-center">Survey not found.</div>;
   
+  if (survey.status === 'INACTIVE') {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
+        <div className="max-w-md w-full bg-white rounded-2xl shadow-sm border border-gray-100 p-8 text-center">
+          <div className="w-16 h-16 bg-amber-100 text-amber-500 rounded-full flex items-center justify-center mx-auto mb-6 text-3xl">!</div>
+          <h2 className="text-2xl font-bold text-gray-900 mb-2">Survey Closed</h2>
+          <p className="text-gray-500">This survey is no longer accepting responses. Thank you!</p>
+        </div>
+      </div>
+    );
+  }
+  
   if (submitted) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">

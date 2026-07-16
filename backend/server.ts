@@ -357,6 +357,35 @@ app.delete('/api/surveys/:id', requireRole(['SUPER ADMIN', 'DEPARTMENT ADMIN']),
   res.json({ success: true });
 });
 
+app.patch('/api/surveys/:id/status', requireRole(['SUPER ADMIN', 'DEPARTMENT ADMIN']), async (req: any, res: any) => {
+  const { id } = req.params;
+  const { status } = req.body;
+  
+  if (!['ACTIVE', 'INACTIVE'].includes(status)) {
+    return res.status(400).json({ error: 'Invalid status' });
+  }
+
+  const existing = await prisma.survey.findUnique({ where: { id } });
+  if (!existing) return res.status(404).json({ error: 'Survey not found' });
+  
+  if (existing.status === 'DRAFT') {
+    return res.status(400).json({ error: 'Cannot change status of a DRAFT survey using this endpoint.' });
+  }
+
+  if (!req.user.role.is_global && existing.department_id !== req.user.department_id) {
+    return res.status(403).json({ error: 'Cannot modify survey for other departments' });
+  }
+
+  const survey = await prisma.survey.update({
+    where: { id },
+    data: { status }
+  });
+
+  const actionName = status === 'INACTIVE' ? 'Deactivated' : 'Reactivated';
+  await logAudit(req.user.id, existing.department_id, `${actionName} Survey: "${existing.title}"`, 'Surveys', req.ip);
+  res.json(survey);
+});
+
 app.get('/api/surveys/:id', async (req, res) => {
   const survey = await prisma.survey.findFirst({
     where: { 
