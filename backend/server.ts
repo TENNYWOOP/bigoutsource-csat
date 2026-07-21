@@ -514,7 +514,11 @@ app.get('/api/notifications', requireRole(['SUPER ADMIN', 'DEPARTMENT ADMIN']), 
   
   const notifications = await prisma.auditLog.findMany({
     where,
-    include: { user: true },
+    include: { 
+      user: {
+        include: { role: true, department: true }
+      }
+    },
     orderBy: { timestamp: 'desc' },
     take: 15
   });
