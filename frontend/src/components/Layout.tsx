@@ -2,6 +2,7 @@ import { Sidebar } from './Sidebar';
 import { Topbar } from './Topbar';
 import { Outlet, useLocation } from 'react-router-dom';
 import { useState } from 'react';
+import { motion, AnimatePresence } from 'motion/react';
 
 const routeTitles: Record<string, string> = {
   '/': 'Survey Summary',
@@ -18,12 +19,22 @@ export function Layout() {
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
 
   return (
-    <div className="flex min-h-screen bg-[#F8FAFC] font-sans text-gray-900">
+    <div className="flex min-h-screen bg-[#F8FAFC] dark:bg-gray-900 font-sans text-gray-900 dark:text-gray-100 transition-colors duration-200">
       <Sidebar isCollapsed={isSidebarCollapsed} setIsCollapsed={setIsSidebarCollapsed} />
       <div className={`flex-1 flex flex-col min-h-screen transition-all duration-300 ${isSidebarCollapsed ? 'ml-20' : 'ml-64'}`}>
         <Topbar title={title} />
         <main className="flex-1 p-8">
-          <Outlet />
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={location.pathname}
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -10 }}
+              transition={{ duration: 0.2 }}
+            >
+              <Outlet />
+            </motion.div>
+          </AnimatePresence>
         </main>
       </div>
     </div>

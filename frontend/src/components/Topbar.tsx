@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { Bell, Loader2, UserPlus, Check, X, RefreshCw } from 'lucide-react';
 import { useAuth } from '../lib/auth';
 import { api } from '../lib/api';
+import { motion, AnimatePresence } from 'motion/react';
 
 interface TopbarProps {
   title: string;
@@ -69,15 +70,15 @@ export function Topbar({ title }: TopbarProps) {
   const initials = user?.name ? user.name.split(' ').map((n: string) => n[0]).join('').substring(0, 2).toUpperCase() : 'U';
 
   return (
-    <header className="h-16 bg-white border-b border-gray-100 flex items-center justify-between px-8 sticky top-0 z-10 w-full">
+    <header className="h-16 bg-white dark:bg-gray-900 border-b border-gray-100 dark:border-gray-800 flex items-center justify-between px-8 sticky top-0 z-10 w-full transition-colors duration-200">
       <div className="flex items-center gap-6">
-        <h1 className="text-xl font-semibold text-gray-800">{title}</h1>
+        <h1 className="text-xl font-semibold text-gray-800 dark:text-white">{title}</h1>
       </div>
 
       <div className="flex items-center gap-6">
         <div className="relative" ref={dropdownRef}>
           <button
-            className="text-gray-400 hover:text-gray-600 relative p-2"
+            className="text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 relative p-2"
             onClick={() => {
               setIsOpen(!isOpen);
               if (!isOpen) {
@@ -95,8 +96,14 @@ export function Topbar({ title }: TopbarProps) {
             )}
           </button>
 
+          <AnimatePresence>
           {isOpen && (
-            <div className="absolute right-0 mt-2 w-96 bg-white rounded-xl shadow-2xl border border-gray-200 overflow-hidden z-50">
+            <motion.div 
+              initial={{ opacity: 0, y: -10, scale: 0.95 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: -10, scale: 0.95 }}
+              transition={{ duration: 0.15 }}
+              className="absolute right-0 mt-2 w-96 bg-white dark:bg-gray-800 rounded-xl shadow-2xl border border-gray-200 dark:border-gray-700 overflow-hidden z-50">
               <div className="px-5 py-3 border-b border-gray-100 flex justify-between items-center bg-white">
                 <h3 className="font-extrabold text-base text-[#0f172a]">Notifications</h3>
                 <div className="flex items-center gap-2">
@@ -165,16 +172,17 @@ export function Topbar({ title }: TopbarProps) {
                   ))
                 )}
               </div>
-            </div>
+            </motion.div>
           )}
+          </AnimatePresence>
         </div>
 
-        <div className="flex items-center gap-3 pl-6 border-l border-gray-200">
+        <div className="flex items-center gap-3 pl-6 border-l border-gray-200 dark:border-gray-800">
           <div className="flex flex-col text-right">
-            <span className="text-sm font-semibold text-gray-900 leading-none">{user?.name || 'User'}</span>
-            <span className="text-xs text-gray-500 mt-1">{getDisplayRole()}</span>
+            <span className="text-sm font-semibold text-gray-900 dark:text-slate-200 leading-none">{user?.name || 'User'}</span>
+            <span className="text-xs text-gray-500 dark:text-slate-400 mt-1">{getDisplayRole()}</span>
           </div>
-          <div className="w-8 h-8 rounded-full bg-gray-900 text-white flex items-center justify-center font-medium text-sm">
+          <div className="w-8 h-8 rounded-full bg-gray-900 dark:bg-slate-700 text-white flex items-center justify-center font-medium text-sm">
             {initials}
           </div>
         </div>

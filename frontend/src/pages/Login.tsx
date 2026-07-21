@@ -1,6 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { useAuth } from '../lib/auth';
 import { ShieldCheck, Eye, EyeOff } from 'lucide-react';
+import { motion } from 'motion/react';
 
 // Theme Colors from PDF
 const NAVY_1 = '#2d3a58';
@@ -456,13 +457,15 @@ export function Login() {
             </div>
 
             {/* Submit Action Button */}
-            <button
+            <motion.button
+              whileHover={{ y: -2, scale: 1.01 }}
+              whileTap={{ scale: 0.98 }}
               type="submit"
               disabled={loading}
-              className="w-full mt-2 py-4 bg-[#3f5aa6] hover:bg-[#2f477f] text-white font-bold text-sm rounded-lg shadow-lg hover:shadow-xl hover:translate-y-[-1px] active:translate-y-[0px] transition-all cursor-pointer flex items-center justify-center gap-2 disabled:opacity-50"
+              className="w-full mt-2 py-4 bg-[#3f5aa6] hover:bg-[#2f477f] dark:bg-blue-600 dark:hover:bg-blue-700 text-white font-bold text-sm rounded-lg shadow-lg hover:shadow-xl transition-all cursor-pointer flex items-center justify-center gap-2 disabled:opacity-50"
             >
               {loading ? 'Authenticating...' : 'Click here to login'}
-            </button>
+            </motion.button>
           </form>
 
           {/* Forgot password */}
