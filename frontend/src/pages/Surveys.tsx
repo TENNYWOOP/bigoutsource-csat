@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { 
-  Plus, Edit2, Trash2, ArrowLeft, Save, Send, Building, Link as LinkIcon, CheckCircle2, Star, PauseCircle, PlayCircle, X
+  Plus, Edit2, Trash2, ArrowLeft, Save, Send, Building, Link as LinkIcon, CheckCircle2, Star, PauseCircle, PlayCircle, X, ArrowUp, ArrowDown
 } from 'lucide-react';
 import { cn } from '../lib/utils';
 import { api } from '../lib/api';
@@ -61,7 +61,11 @@ export function Surveys() {
     { id: 'q3', type_id: 'personnel-dropdown', label: 'Name of IT Personnel', required: true, section_id: 's1', question_order: 3, isFixed: true },
     { id: 'q4', type_id: 'short-text', label: 'Ticket Number', required: true, section_id: 's1', question_order: 4, isFixed: true },
     { id: 'q5', type_id: 'short-text', label: 'Email of the person who is submitting the survey', required: true, section_id: 's1', question_order: 5, isFixed: true },
-    { id: 'q6', type_id: 'paragraph', label: 'Please share any feedback or suggestions to help improve our services', required: true, section_id: 's2', question_order: 1, isFixed: true }
+    { id: 'q_rating1', type_id: 'rating', label: 'Please rate your overall experience with the IT support you received.', required: true, section_id: 's2', question_order: 1, isFixed: false },
+    { id: 'q_rating2', type_id: 'rating', label: 'Please rate the timeliness of the response and resolution.', required: true, section_id: 's2', question_order: 2, isFixed: false },
+    { id: 'q_rating3', type_id: 'rating', label: 'Please rate the professionalism and clarity of communication.', required: true, section_id: 's2', question_order: 3, isFixed: false },
+    { id: 'q_rating4', type_id: 'rating', label: 'Was the solution clearly explained to you?', required: true, section_id: 's2', question_order: 4, isFixed: false },
+    { id: 'q6', type_id: 'paragraph', label: 'Please share any feedback or suggestions to help improve our services', required: true, section_id: 's2', question_order: 5, isFixed: true }
   ]);
 
   const [activeQuestionId, setActiveQuestionId] = useState<string | null>('q1');
@@ -152,6 +156,37 @@ export function Surveys() {
     setQuestions(questions.filter(q => q.id !== id));
   };
 
+  const handleMoveQuestion = (id: string, direction: 'up' | 'down') => {
+    const qIndex = questions.findIndex(q => q.id === id);
+    if (qIndex === -1) return;
+    
+    const question = questions[qIndex];
+    if (question.isFixed) return;
+
+    const sectionQuestions = questions.filter(q => q.section_id === question.section_id);
+    const sectionIndex = sectionQuestions.findIndex(q => q.id === id);
+    
+    let targetId = null;
+    if (direction === 'up' && sectionIndex > 0) {
+      if (!sectionQuestions[sectionIndex - 1].isFixed) {
+        targetId = sectionQuestions[sectionIndex - 1].id;
+      }
+    } else if (direction === 'down' && sectionIndex < sectionQuestions.length - 1) {
+      if (!sectionQuestions[sectionIndex + 1].isFixed) {
+        targetId = sectionQuestions[sectionIndex + 1].id;
+      }
+    }
+    
+    if (targetId) {
+      const targetGlobalIdx = questions.findIndex(q => q.id === targetId);
+      const newQuestions = [...questions];
+      const temp = newQuestions[qIndex];
+      newQuestions[qIndex] = newQuestions[targetGlobalIdx];
+      newQuestions[targetGlobalIdx] = temp;
+      setQuestions(newQuestions);
+    }
+  };
+
   const resetForm = () => {
     setIsCreating(false);
     setEditingSurveyId(null);
@@ -167,7 +202,11 @@ export function Surveys() {
       { id: 'q3', type_id: 'personnel-dropdown', label: 'Name of IT Personnel', required: true, section_id: 's1', question_order: 3, isFixed: true },
       { id: 'q4', type_id: 'short-text', label: 'Ticket Number', required: true, section_id: 's1', question_order: 4, isFixed: true },
       { id: 'q5', type_id: 'short-text', label: 'Email of the person who is submitting the survey', required: true, section_id: 's1', question_order: 5, isFixed: true },
-      { id: 'q6', type_id: 'paragraph', label: 'Please share any feedback or suggestions to help improve our services', required: true, section_id: 's2', question_order: 1, isFixed: true }
+      { id: 'q_rating1', type_id: 'rating', label: 'Please rate your overall experience with the IT support you received.', required: true, section_id: 's2', question_order: 1, isFixed: false },
+      { id: 'q_rating2', type_id: 'rating', label: 'Please rate the timeliness of the response and resolution.', required: true, section_id: 's2', question_order: 2, isFixed: false },
+      { id: 'q_rating3', type_id: 'rating', label: 'Please rate the professionalism and clarity of communication.', required: true, section_id: 's2', question_order: 3, isFixed: false },
+      { id: 'q_rating4', type_id: 'rating', label: 'Was the solution clearly explained to you?', required: true, section_id: 's2', question_order: 4, isFixed: false },
+      { id: 'q6', type_id: 'paragraph', label: 'Please share any feedback or suggestions to help improve our services', required: true, section_id: 's2', question_order: 5, isFixed: true }
     ]);
   };
 
@@ -316,10 +355,10 @@ export function Surveys() {
                   <Star 
                     strokeWidth={1.5}
                     className={cn(
-                      "w-5 h-5 transition-colors",
+                      "w-6 h-6 transition-all duration-200",
                       isSelected 
-                        ? "text-amber-500 fill-amber-500/20" 
-                        : "text-slate-400 dark:text-white hover:text-amber-500"
+                        ? "text-amber-500 fill-amber-500" 
+                        : "text-slate-400 fill-transparent hover:text-amber-400 hover:fill-amber-100"
                     )}
                   />
                 </button>
@@ -550,7 +589,7 @@ export function Surveys() {
                                       "w-8 h-8",
                                       Number(value) >= star 
                                         ? "text-amber-500 fill-amber-500" 
-                                        : "text-gray-300 fill-gray-50"
+                                        : "text-slate-400 fill-transparent"
                                     )}
                                   />
                                 ))}
@@ -781,21 +820,28 @@ export function Surveys() {
                             <input 
                               type="text" 
                               value={question.label}
+                              placeholder="Enter your question here..."
                               onChange={(e) => setQuestions(questions.map(q => q.id === question.id ? { ...q, label: e.target.value } : q))}
                               disabled={question.isFixed}
-                              className={cn("w-full font-bold text-gray-800 border-b border-transparent focus:border-indigo-500 focus:outline-none pb-1.5 text-base", question.isFixed && "bg-transparent cursor-not-allowed text-gray-600")}
+                              className={cn("w-full font-bold text-gray-800 border-b border-transparent hover:border-gray-300 focus:border-indigo-500 focus:outline-none pb-1.5 text-base transition-colors", question.isFixed && "bg-transparent cursor-not-allowed text-gray-600 hover:border-transparent")}
                             />
                             <div className="flex items-center gap-2 ml-4">
-                              <select 
-                                value={question.type_id}
-                                onChange={e => setQuestions(questions.map(q => q.id === question.id ? { ...q, type_id: e.target.value } : q))}
-                                disabled={question.isFixed}
-                                className={cn("px-3 py-1.5 bg-gray-50 border border-gray-100 rounded-lg text-xs font-semibold text-gray-500", question.isFixed && "opacity-60 cursor-not-allowed")}
-                              >
-                                {questionTypes.map(qt => <option key={qt.id} value={qt.id}>{qt.label}</option>)}
-                              </select>
+                              {!(question.isFixed || (index === 1 && !question.isFixed)) && (
+                                <select 
+                                  value={question.type_id}
+                                  onChange={e => setQuestions(questions.map(q => q.id === question.id ? { ...q, type_id: e.target.value } : q))}
+                                  className="px-3 py-1.5 bg-gray-50 border border-gray-100 rounded-lg text-xs font-semibold text-gray-500 cursor-pointer"
+                                >
+                                  {questionTypes.map(qt => <option key={qt.id} value={qt.id}>{qt.label}</option>)}
+                                </select>
+                              )}
                               {!question.isFixed && (
-                                <button onClick={(e) => { e.stopPropagation(); handleDeleteQuestion(question.id); }} className="p-1.5 text-gray-400 hover:text-red-500"><Trash2 className="w-4 h-4" /></button>
+                                <div className="flex items-center border-l border-gray-100 pl-2 ml-2">
+                                  <button onClick={(e) => { e.stopPropagation(); handleMoveQuestion(question.id, 'up'); }} className="p-1.5 text-gray-400 hover:text-indigo-600 transition-colors" title="Move Up"><ArrowUp className="w-4 h-4" /></button>
+                                  <button onClick={(e) => { e.stopPropagation(); handleMoveQuestion(question.id, 'down'); }} className="p-1.5 text-gray-400 hover:text-indigo-600 transition-colors" title="Move Down"><ArrowDown className="w-4 h-4" /></button>
+                                  <div className="w-px h-4 bg-gray-200 mx-1"></div>
+                                  <button onClick={(e) => { e.stopPropagation(); handleDeleteQuestion(question.id); }} className="p-1.5 text-gray-400 hover:text-red-500 transition-colors" title="Delete Question"><Trash2 className="w-4 h-4" /></button>
+                                </div>
                               )}
                             </div>
                           </div>
@@ -804,14 +850,19 @@ export function Surveys() {
                           {renderConfigComponent(question.type_id)}
                           
                           <div className="mt-4 flex items-center justify-end border-t border-gray-50 pt-3">
-                            <label className={cn("flex items-center gap-2 text-xs font-semibold cursor-pointer", question.isFixed ? "text-gray-400 cursor-not-allowed" : "text-gray-600")}>
-                              <input 
-                                type="checkbox" 
-                                checked={question.required} 
-                                disabled={question.isFixed}
-                                onChange={e => setQuestions(questions.map(q => q.id === question.id ? { ...q, required: e.target.checked } : q))} 
-                              /> Required
-                            </label>
+                            {question.isFixed ? (
+                              <span className="flex items-center gap-1.5 text-xs font-semibold text-gray-400">
+                                <CheckCircle2 className="w-4 h-4" /> Required
+                              </span>
+                            ) : (
+                              <label className="flex items-center gap-2 text-xs font-semibold cursor-pointer text-gray-600">
+                                <input 
+                                  type="checkbox" 
+                                  checked={question.required} 
+                                  onChange={e => setQuestions(questions.map(q => q.id === question.id ? { ...q, required: e.target.checked } : q))} 
+                                /> Required
+                              </label>
+                            )}
                           </div>
                         </div>
                       </div>
@@ -820,7 +871,7 @@ export function Surveys() {
 
                   <div className="pt-4">
                     <button 
-                      onClick={() => handleAddQuestion(section.id, questionTypes[0]?.id || 'short-text')}
+                      onClick={() => handleAddQuestion(section.id, index === 1 ? 'rating' : (questionTypes[0]?.id || 'short-text'))}
                       className="text-sm font-semibold text-blue-600 flex items-center gap-1 hover:text-blue-700"
                     >
                       <Plus className="w-4 h-4" /> Add Question to Section
