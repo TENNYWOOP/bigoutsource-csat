@@ -6,6 +6,20 @@ import { cn } from '../lib/utils';
 import { useAuth } from '../lib/auth';
 import { motion } from 'motion/react';
 
+const getRatingColor = (rating: number, isBackground: boolean = false) => {
+  const hue = (rating - 1) * 30; // 0 (red) to 120 (green)
+  if (isBackground) return `hsl(${hue}, 80%, 95%)`;
+  
+  // Custom lightness for darker green
+  let lightness = 45; // default red/yellow lightness
+  if (rating > 3) {
+    // scale from 45% at rating 3 down to 25% at rating 5 for a darker green
+    lightness = 45 - ((rating - 3) * 10);
+  }
+  
+  return `hsl(${hue}, 80%, ${lightness}%)`;
+};
+
 export function Dashboard() {
   const { isGlobal } = useAuth();
   const [stats, setStats] = useState<any>(null);
@@ -158,9 +172,12 @@ export function Dashboard() {
                   <YAxis axisLine={false} tickLine={false} tick={{fill: '#6B7280', fontSize: 12}} allowDecimals={false} />
                   <Tooltip cursor={{fill: '#F3F4F6'}} />
                   <Bar dataKey="count" radius={[4, 4, 0, 0]}>
-                    {distributionData.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={parseInt(entry.rating) >= 4 ? '#10B981' : (parseInt(entry.rating) === 3 ? '#FBBF24' : '#EF4444')} />
-                    ))}
+                    {distributionData.map((entry, index) => {
+                      const ratingVal = parseInt(entry.rating);
+                      return (
+                        <Cell key={`cell-${index}`} fill={getRatingColor(ratingVal)} />
+                      );
+                    })}
                   </Bar>
                 </BarChart>
               </ResponsiveContainer>
@@ -220,10 +237,13 @@ export function Dashboard() {
                     <Star key={i} className={cn("w-3.5 h-3.5", i < (rating.rating || 0) ? "fill-current" : "text-gray-300")} />
                   ))}
                 </div>
-                <span className={cn(
-                  "text-sm font-bold px-2 py-0.5 rounded-md",
-                  rating.rating >= 4 ? "bg-emerald-50 text-emerald-600" : (rating.rating === 3 ? "bg-yellow-50 text-yellow-600" : "bg-red-50 text-red-600")
-                )}>
+                <span 
+                  className="text-sm font-bold px-2 py-0.5 rounded-md"
+                  style={{
+                    color: getRatingColor(rating.rating || 1),
+                    backgroundColor: getRatingColor(rating.rating || 1, true)
+                  }}
+                >
                   {rating.rating?.toFixed(1)}
                 </span>
               </div>
@@ -284,11 +304,14 @@ export function Dashboard() {
                       <td className="py-3 px-6 whitespace-nowrap">{new Date(rating.submittedAt).toLocaleString()}</td>
                       <td className="py-3 px-6 font-medium text-gray-900">{rating.surveyTitle}</td>
                       <td className="py-3 px-6 text-center">
-                        <span className={cn(
-                          "inline-block font-bold px-2 py-0.5 rounded text-xs",
-                          rating.rating >= 4 ? "bg-emerald-50 text-emerald-600" : (rating.rating === 3 ? "bg-yellow-50 text-yellow-600" : "bg-red-50 text-red-600")
-                        )}>
-                          {rating.rating} ★
+                        <span 
+                          className="inline-block font-bold px-2 py-0.5 rounded text-xs"
+                          style={{
+                            color: getRatingColor(rating.rating || 1),
+                            backgroundColor: getRatingColor(rating.rating || 1, true)
+                          }}
+                        >
+                          {rating.rating?.toFixed(1)} ★
                         </span>
                       </td>
                       <td className="py-3 px-6">{rating.comment || <span className="text-gray-400 italic">No comment</span>}</td>

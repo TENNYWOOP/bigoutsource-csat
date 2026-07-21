@@ -551,6 +551,9 @@ app.get('/api/analytics', requireAuth, async (req: any, res) => {
     where: {
       response: { survey_id: { in: surveyIds } },
       question: { type_id: 'rating' }
+    },
+    include: {
+      response: true
     }
   });
 
@@ -575,29 +578,75 @@ app.get('/api/analytics', requireAuth, async (req: any, res) => {
     take: 50,
     include: {
       survey: { select: { title: true } },
-      answers: { include: { question: true } }
+      answers: { include: { question: { include: { section: true } } } }
     }
   });
 
   const recentRatings = recentResponses.map(r => {
-    const ratingAnswer = r.answers.find(a => a.question.type_id === 'rating');
-    const textAnswer = r.answers.find(a => ['long_text', 'short_text', 'paragraph', 'short-text', 'long-text'].includes(a.question.type_id));
+    const ratingAnswers = r.answers.filter(a => a.question.type_id === 'rating');
+    let avgRating: number | null = null;
+    
+    if (ratingAnswers.length > 0) {
+      const sum = ratingAnswers.reduce((acc, a) => acc + (parseFloat(a.value) || 0), 0);
+      avgRating = sum / ratingAnswers.length;
+    }
+    
+    // Prioritize text answers from section 2 (the comment/feedback section)
+    const textAnswer = r.answers.find(a => 
+      ['long_text', 'short_text', 'paragraph', 'short-text', 'long-text'].includes(a.question.type_id) && 
+      (a.question as any).section?.section_order === 2
+    ) || r.answers.find(a => 
+      ['long_text', 'short_text', 'paragraph', 'short-text', 'long-text'].includes(a.question.type_id)
+    );
     
     return {
       id: r.id,
       surveyTitle: r.survey.title,
       submittedAt: r.submitted_at,
-      rating: ratingAnswer ? parseInt(ratingAnswer.value) : null,
+      rating: avgRating,
       comment: textAnswer ? textAnswer.value : null
     };
   }).filter(r => r.rating !== null);
+
+  const chartDataMap: Record<string, { topBox: number, total: number }> = {};
+  for (let i = 6; i >= 0; i--) {
+    const d = new Date();
+    d.setDate(d.getDate() - i);
+    const name = `${d.toLocaleString('en-US', { month: 'short' })} ${d.getDate()}`;
+    chartDataMap[name] = { topBox: 0, total: 0 };
+  }
+
+  for (const a of ratingAnswers) {
+    const date = new Date((a as any).response.submitted_at);
+    const name = `${date.toLocaleString('en-US', { month: 'short' })} ${date.getDate()}`;
+    if (!chartDataMap[name]) {
+      chartDataMap[name] = { topBox: 0, total: 0 };
+    }
+    chartDataMap[name].total++;
+    const val = parseInt(a.value);
+    if (val >= 4) {
+      chartDataMap[name].topBox++;
+    }
+  }
+
+  // Sort by date could be tricky if spans months, but we assume insertion order is mostly correct for the map 
+  // or we can just rely on the map order since it was pre-seeded. 
+  // But wait, older dates added dynamically will appear at the end! 
+  // Better to just return the array in some chronological order if needed, but since it's just the last 7 days + any stragglers, we'll leave it as is.
+  const chartData = Object.keys(chartDataMap).map(name => {
+    const { topBox, total } = chartDataMap[name];
+    return {
+      name,
+      value: total > 0 ? parseFloat(((topBox / total) * 100).toFixed(1)) : 0
+    };
+  });
 
   res.json({
     totalResponses: responses,
     averageCsat: avg,
     ratingDistribution: distribution,
     recentRatings,
-    chartData: [] // Keep placeholder for now
+    chartData
   });
 });
 
