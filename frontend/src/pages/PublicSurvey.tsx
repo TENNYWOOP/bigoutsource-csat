@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { api } from '../lib/api';
+import { motion } from 'motion/react';
 import { useToast } from '../components/Toast';
 import { Star } from 'lucide-react';
 import { cn } from '../lib/utils';
@@ -11,6 +12,7 @@ export function PublicSurvey() {
   const [survey, setSurvey] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [submitted, setSubmitted] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
   const [answers, setAnswers] = useState<Record<string, string>>({});
   const [currentSectionIndex, setCurrentSectionIndex] = useState(0);
 
@@ -64,6 +66,7 @@ export function PublicSurvey() {
     }
 
     try {
+      setSubmitting(true);
       const formattedAnswers = Object.keys(answers).map(qId => ({
         question_id: qId,
         value: answers[qId]
@@ -77,6 +80,8 @@ export function PublicSurvey() {
       toast.success('Survey response submitted successfully!');
     } catch (err) {
       toast.error('Failed to submit survey.');
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -243,13 +248,15 @@ export function PublicSurvey() {
               )}
               
               {currentSectionIndex === (survey.sections?.length || 1) - 1 && (
-                <button 
-                  key="submit-btn"
-                  type="submit" 
-                  className="bg-emerald-600 hover:bg-emerald-700 text-white px-8 py-2.5 rounded-xl font-bold shadow-md transition-colors"
+                <motion.button
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.95 }}
+                  onClick={handleSubmit}
+                  disabled={submitting}
+                  className="bg-blue-600 hover:bg-blue-700 text-white px-8 py-2.5 rounded-xl font-bold shadow-md transition-colors"
                 >
-                  Submit Survey
-                </button>
+                  {submitting ? 'Submitting...' : 'Submit Feedback'}
+                </motion.button>
               )}
             </div>
           </div>

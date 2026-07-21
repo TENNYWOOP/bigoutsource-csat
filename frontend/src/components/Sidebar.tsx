@@ -1,4 +1,5 @@
 import { Link, useLocation } from 'react-router-dom';
+import { motion } from 'motion/react';
 import { 
   LayoutDashboard, 
   ClipboardList, 
@@ -26,12 +27,12 @@ export function Sidebar() {
   const initials = user?.name ? user.name.split(' ').map((n: string) => n[0]).join('').substring(0, 2).toUpperCase() : 'U';
 
   return (
-    <aside className="w-64 bg-white border-r border-gray-200 h-screen flex flex-col fixed left-0 top-0">
+    <aside className="w-64 bg-white dark:bg-[#1A1D27] border-r border-gray-200 dark:border-slate-700/60 h-screen flex flex-col fixed left-0 top-0">
       {/* Logo Area */}
       <div className="h-16 flex items-center px-6 border-b border-transparent mb-4 mt-2">
         <div className="flex items-center gap-3">
           <img src="/logo-only-bigoutsource.svg" alt="Big Outsource CSAT Logo" className="w-8 h-8 object-contain" />
-          <span className="font-bold text-gray-900 text-lg tracking-tight">Big Outsource CSAT</span>
+          <span className="font-bold text-gray-900 dark:text-slate-100 text-lg tracking-tight">Big Outsource CSAT</span>
         </div>
       </div>
 
@@ -44,45 +45,55 @@ export function Sidebar() {
           const isActive = location.pathname === item.path || 
                            (item.path !== '/' && location.pathname.startsWith(item.path));
           return (
-            <Link
+            <motion.div
               key={item.name}
-              to={item.path}
-              className={cn(
-                "flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors",
-                isActive 
-                  ? "bg-gray-900 text-white" 
-                  : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
-              )}
+              whileHover={{ x: 4 }}
+              whileTap={{ scale: 0.98 }}
             >
-              <item.icon className={cn("w-5 h-5", isActive ? "text-gray-300" : "text-gray-400")} />
-              {item.name}
-            </Link>
+              <Link
+                to={item.path}
+                className={cn(
+                  "flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors",
+                  isActive 
+                    ? "bg-gray-900 text-white dark:bg-gray-800" 
+                    : "text-gray-600 hover:bg-gray-50 hover:text-gray-900 dark:text-gray-400 dark:hover:bg-gray-800 dark:hover:text-white"
+                )}
+              >
+                <item.icon className={cn("w-5 h-5", isActive ? "text-gray-300 dark:text-gray-400" : "text-gray-400 dark:text-gray-500")} />
+                {item.name}
+              </Link>
+            </motion.div>
           );
         })}
       </nav>
 
       {/* User Profile & Logout (Bottom) */}
-      <div className="p-4 border-t border-gray-200">
+      <div className="p-4 border-t border-gray-200 dark:border-slate-700/60">
         <div className="flex items-center gap-3 mb-6 px-2">
-          <div className="w-9 h-9 rounded-full bg-gray-100 flex items-center justify-center text-gray-600 font-semibold text-sm border border-gray-200">
+          <div className="w-9 h-9 rounded-full bg-gray-100 dark:bg-slate-800 flex items-center justify-center text-gray-600 dark:text-slate-300 font-semibold text-sm border border-gray-200 dark:border-slate-700">
             {initials}
           </div>
           <div className="flex flex-col">
-            <span className="text-sm font-semibold text-gray-900 leading-none">{user?.name}</span>
-            <span className="text-xs text-gray-500 mt-1 uppercase tracking-wider font-medium">
+            <span className="text-sm font-semibold text-gray-900 dark:text-slate-200 leading-none">{user?.name}</span>
+            <span className="text-xs text-gray-500 dark:text-slate-400 mt-1 uppercase tracking-wider font-medium">
               {user?.role?.name === 'DEPARTMENT ADMIN' && user?.department?.code 
                 ? `${user.department.code} Admin` 
                 : user?.role?.name === 'SUPER ADMIN' ? 'Super Admin' : user?.role?.name}
             </span>
           </div>
         </div>
-        <button onClick={logout} className="flex items-center justify-between w-full px-2 text-sm text-red-500 font-medium hover:text-red-600 transition-colors">
+        <motion.button 
+          onClick={logout} 
+          whileHover={{ x: 4 }}
+          whileTap={{ scale: 0.96 }}
+          className="flex items-center justify-between w-full px-2 text-sm text-red-500 font-medium hover:text-red-600 transition-colors"
+        >
           <div className="flex items-center gap-2">
             <LogOut className="w-4 h-4" />
             <span>Log out</span>
           </div>
           <ChevronLeft className="w-4 h-4 text-gray-400" />
-        </button>
+        </motion.button>
       </div>
     </aside>
   );

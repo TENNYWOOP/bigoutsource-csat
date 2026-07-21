@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { Bell, Loader2, UserPlus, Building, Trash2, BarChart2 } from 'lucide-react';
 import { useAuth } from '../lib/auth';
 import { api } from '../lib/api';
+import { motion, AnimatePresence } from 'motion/react';
 
 interface TopbarProps {
   title: string;
@@ -89,14 +90,16 @@ export function Topbar({ title }: TopbarProps) {
   const initials = user?.name ? user.name.split(' ').map((n: string) => n[0]).join('').substring(0, 2).toUpperCase() : 'U';
 
   return (
-    <header className="h-16 bg-white border-b border-gray-100 flex items-center justify-between px-8 sticky top-0 z-10 w-full">
+    <header className="h-16 bg-white dark:bg-[#1A1D27] border-b border-gray-100 dark:border-slate-700/60 flex items-center justify-between px-8 sticky top-0 z-10 w-full transition-colors">
       <div className="flex items-center gap-6">
-        <h1 className="text-xl font-semibold text-gray-800">{title}</h1>
+        <h1 className="text-xl font-semibold text-gray-800 dark:text-slate-100">{title}</h1>
       </div>
 
       <div className="flex items-center gap-6">
         <div className="relative" ref={dropdownRef}>
-          <button
+          <motion.button
+            whileHover={{ scale: 1.1 }}
+            whileTap={{ scale: 0.9 }}
             className="text-gray-400 hover:text-gray-600 relative p-2"
             onClick={() => {
               setIsOpen(!isOpen);
@@ -113,51 +116,63 @@ export function Topbar({ title }: TopbarProps) {
             {hasUnread && (
               <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full border-2 border-white"></span>
             )}
-          </button>
+          </motion.button>
 
-          {isOpen && (
-            <div className="absolute right-0 mt-2 w-80 bg-white rounded-xl shadow-lg border border-gray-100 overflow-hidden z-50">
-              <div className="p-4 border-b border-gray-50 bg-gray-50/50 flex justify-between items-center">
-                <h3 className="font-semibold text-sm text-gray-900">Notifications</h3>
-                {hasUnread && (
-                  <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">{notifications.length} New</span>
-                )}
-              </div>
-              <div className="max-h-[400px] overflow-y-auto">
-                {loading ? (
-                  <div className="p-8 flex justify-center text-gray-400">
-                    <Loader2 className="w-5 h-5 animate-spin" />
-                  </div>
-                ) : notifications.length === 0 ? (
-                  <div className="p-8 text-center text-sm text-gray-500">
-                    No new notifications.
-                  </div>
-                ) : (
-                  <div className="bg-gray-50/50 p-2 flex flex-col gap-3">
-                    {notifications.map((notif: any) => (
-                      <div key={notif.id} className="bg-white border border-gray-100 shadow-md rounded-lg p-3 hover:shadow-lg hover:border-gray-200 transition-all cursor-default flex items-start gap-3">
-                        {getNotificationIcon(notif.action_description)}
-                        <div>
-                          <p className="text-sm text-gray-800 mb-1 leading-snug">{formatActionText(notif.action_description)}</p>
-                          <p className="text-xs text-gray-400 font-medium">
-                            {new Date(notif.timestamp).toLocaleString([], { year: 'numeric', month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
-                          </p>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-            </div>
-          )}
+          <AnimatePresence>
+            {isOpen && (
+              <motion.div 
+                initial={{ opacity: 0, y: -10, scale: 0.95 }}
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                exit={{ opacity: 0, y: -10, scale: 0.95 }}
+                transition={{ duration: 0.15 }}
+                className="absolute right-0 mt-2 w-80 bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-100 dark:border-gray-700 overflow-hidden z-50"
+              >
+                <div className="p-4 border-b border-gray-50 dark:border-gray-700 bg-gray-50/50 dark:bg-gray-800/50 flex justify-between items-center">
+                  <h3 className="font-semibold text-sm text-gray-900 dark:text-white">Notifications</h3>
+                  {hasUnread && (
+                    <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">{notifications.length} New</span>
+                  )}
+                </div>
+                <div className="max-h-[400px] overflow-y-auto">
+                  {loading ? (
+                    <div className="p-8 flex justify-center text-gray-400">
+                      <Loader2 className="w-5 h-5 animate-spin" />
+                    </div>
+                  ) : notifications.length === 0 ? (
+                    <div className="p-8 text-center text-sm text-gray-500">
+                      No new notifications.
+                    </div>
+                  ) : (
+                    <div className="bg-gray-50/50 dark:bg-gray-800/50 p-2 flex flex-col gap-3">
+                      {notifications.map((notif: any) => (
+                        <motion.div 
+                          whileHover={{ scale: 1.02 }}
+                          key={notif.id} 
+                          className="bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 shadow-md rounded-lg p-3 hover:shadow-lg transition-shadow cursor-default flex items-start gap-3"
+                        >
+                          {getNotificationIcon(notif.action_description)}
+                          <div>
+                            <p className="text-sm text-gray-800 dark:text-gray-200 mb-1 leading-snug">{formatActionText(notif.action_description)}</p>
+                            <p className="text-xs text-gray-400 font-medium">
+                              {new Date(notif.timestamp).toLocaleString([], { year: 'numeric', month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                            </p>
+                          </div>
+                        </motion.div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
         </div>
 
-        <div className="flex items-center gap-3 pl-6 border-l border-gray-200">
+        <div className="flex items-center gap-3 pl-6 border-l border-gray-200 dark:border-slate-700/60">
           <div className="flex flex-col text-right">
-            <span className="text-sm font-semibold text-gray-900 leading-none">{user?.name || 'User'}</span>
-            <span className="text-xs text-gray-500 mt-1">{getDisplayRole()}</span>
+            <span className="text-sm font-semibold text-gray-900 dark:text-slate-200 leading-none">{user?.name || 'User'}</span>
+            <span className="text-xs text-gray-500 dark:text-slate-400 mt-1">{getDisplayRole()}</span>
           </div>
-          <div className="w-8 h-8 rounded-full bg-gray-900 text-white flex items-center justify-center font-medium text-sm">
+          <div className="w-8 h-8 rounded-full bg-gray-900 dark:bg-slate-700 text-white flex items-center justify-center font-medium text-sm">
             {initials}
           </div>
         </div>
