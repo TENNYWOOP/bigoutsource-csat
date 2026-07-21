@@ -1,6 +1,23 @@
 import { useState, useEffect } from 'react';
+import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+} from '@dnd-kit/core';
+import type { DragEndEvent } from '@dnd-kit/core';
+import {
+  arrayMove,
+  SortableContext,
+  sortableKeyboardCoordinates,
+  verticalListSortingStrategy,
+  useSortable
+} from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
 import { 
-  Plus, Edit2, Trash2, ArrowLeft, Save, Send, Building, Link as LinkIcon, CheckCircle2, Star, PauseCircle, PlayCircle, X, ArrowUp, ArrowDown
+  Plus, Edit2, Trash2, ArrowLeft, Save, Send, Building, Link as LinkIcon, CheckCircle2, Star, PauseCircle, PlayCircle, X, GripHorizontal
 } from 'lucide-react';
 import { cn } from '../lib/utils';
 import { api } from '../lib/api';
@@ -156,36 +173,40 @@ export function Surveys() {
     setQuestions(questions.filter(q => q.id !== id));
   };
 
-  const handleMoveQuestion = (id: string, direction: 'up' | 'down') => {
-    const qIndex = questions.findIndex(q => q.id === id);
-    if (qIndex === -1) return;
-    
-    const question = questions[qIndex];
-    if (question.isFixed) return;
 
-    const sectionQuestions = questions.filter(q => q.section_id === question.section_id);
-    const sectionIndex = sectionQuestions.findIndex(q => q.id === id);
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: {
+        distance: 5,
+      },
+    }),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    })
+  );
+
+  const handleDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
     
-    let targetId = null;
-    if (direction === 'up' && sectionIndex > 0) {
-      if (!sectionQuestions[sectionIndex - 1].isFixed) {
-        targetId = sectionQuestions[sectionIndex - 1].id;
-      }
-    } else if (direction === 'down' && sectionIndex < sectionQuestions.length - 1) {
-      if (!sectionQuestions[sectionIndex + 1].isFixed) {
-        targetId = sectionQuestions[sectionIndex + 1].id;
-      }
-    }
-    
-    if (targetId) {
-      const targetGlobalIdx = questions.findIndex(q => q.id === targetId);
-      const newQuestions = [...questions];
-      const temp = newQuestions[qIndex];
-      newQuestions[qIndex] = newQuestions[targetGlobalIdx];
-      newQuestions[targetGlobalIdx] = temp;
-      setQuestions(newQuestions);
+    if (over && active.id !== over.id) {
+      setQuestions((items) => {
+        const oldIndex = items.findIndex(q => q.id === active.id);
+        const newIndex = items.findIndex(q => q.id === over.id);
+        
+        if (oldIndex !== -1 && newIndex !== -1) {
+          if (items[oldIndex].isFixed || items[newIndex].isFixed) {
+            return items;
+          }
+          const reordered = arrayMove(items, oldIndex, newIndex);
+          // update question_order
+          return reordered.map((q, idx) => ({...q, question_order: idx + 1}));
+        }
+        return items;
+      });
     }
   };
+
+
 
   const resetForm = () => {
     setIsCreating(false);
@@ -809,65 +830,35 @@ export function Surveys() {
                     )}
                   </div>
                   
-                  {questions.filter(q => q.section_id === section.id).map(question => {
-                    const isActive = activeQuestionId === question.id;
-                    
-                    return (
-                      <div key={question.id} onClick={() => setActiveQuestionId(question.id)} className={cn("bg-white rounded-xl border transition-all shadow-sm overflow-hidden cursor-pointer", isActive ? "border-indigo-600 ring-1 ring-indigo-500/10" : "border-gray-200")}>
-                        <div className="p-6 relative">
-                          {isActive && <div className="absolute top-0 bottom-0 left-0 w-1 bg-indigo-600"></div>}
-                          <div className="flex justify-between items-start mb-6">
-                            <input 
-                              type="text" 
-                              value={question.label}
-                              placeholder="Enter your question here..."
-                              onChange={(e) => setQuestions(questions.map(q => q.id === question.id ? { ...q, label: e.target.value } : q))}
-                              disabled={question.isFixed}
-                              className={cn("w-full font-bold text-gray-800 border-b border-transparent hover:border-gray-300 focus:border-indigo-500 focus:outline-none pb-1.5 text-base transition-colors", question.isFixed && "bg-transparent cursor-not-allowed text-gray-600 hover:border-transparent")}
-                            />
-                            <div className="flex items-center gap-2 ml-4">
-                              {!(question.isFixed || (index === 1 && !question.isFixed)) && (
-                                <select 
-                                  value={question.type_id}
-                                  onChange={e => setQuestions(questions.map(q => q.id === question.id ? { ...q, type_id: e.target.value } : q))}
-                                  className="px-3 py-1.5 bg-gray-50 border border-gray-100 rounded-lg text-xs font-semibold text-gray-500 cursor-pointer"
-                                >
-                                  {questionTypes.map(qt => <option key={qt.id} value={qt.id}>{qt.label}</option>)}
-                                </select>
-                              )}
-                              {!question.isFixed && (
-                                <div className="flex items-center border-l border-gray-100 pl-2 ml-2">
-                                  <button onClick={(e) => { e.stopPropagation(); handleMoveQuestion(question.id, 'up'); }} className="p-1.5 text-gray-400 hover:text-indigo-600 transition-colors" title="Move Up"><ArrowUp className="w-4 h-4" /></button>
-                                  <button onClick={(e) => { e.stopPropagation(); handleMoveQuestion(question.id, 'down'); }} className="p-1.5 text-gray-400 hover:text-indigo-600 transition-colors" title="Move Down"><ArrowDown className="w-4 h-4" /></button>
-                                  <div className="w-px h-4 bg-gray-200 mx-1"></div>
-                                  <button onClick={(e) => { e.stopPropagation(); handleDeleteQuestion(question.id); }} className="p-1.5 text-gray-400 hover:text-red-500 transition-colors" title="Delete Question"><Trash2 className="w-4 h-4" /></button>
-                                </div>
-                              )}
-                            </div>
-                          </div>
-                          
-                          {/* Config-driven Dynamic Renderer */}
-                          {renderConfigComponent(question.type_id)}
-                          
-                          <div className="mt-4 flex items-center justify-end border-t border-gray-50 pt-3">
-                            {question.isFixed ? (
-                              <span className="flex items-center gap-1.5 text-xs font-semibold text-gray-400">
-                                <CheckCircle2 className="w-4 h-4" /> Required
-                              </span>
-                            ) : (
-                              <label className="flex items-center gap-2 text-xs font-semibold cursor-pointer text-gray-600">
-                                <input 
-                                  type="checkbox" 
-                                  checked={question.required} 
-                                  onChange={e => setQuestions(questions.map(q => q.id === question.id ? { ...q, required: e.target.checked } : q))} 
-                                /> Required
-                              </label>
-                            )}
-                          </div>
-                        </div>
+                  <DndContext 
+                    sensors={sensors}
+                    collisionDetection={closestCenter}
+                    onDragEnd={handleDragEnd}
+                  >
+                    <SortableContext 
+                      items={questions.filter(q => q.section_id === section.id).map(q => q.id)}
+                      strategy={verticalListSortingStrategy}
+                    >
+                      <div className="space-y-6 mt-6">
+                        {questions.filter(q => q.section_id === section.id).map((question, qIndex) => (
+                          <SortableQuestionCard
+                            key={question.id}
+                            question={question}
+                            index={qIndex}
+                            sectionIndex={index}
+                            isActive={activeQuestionId === question.id}
+                            onActivate={() => setActiveQuestionId(question.id)}
+                            onChangeLabel={(e: any) => setQuestions(questions.map(q => q.id === question.id ? { ...q, label: e.target.value } : q))}
+                            onChangeType={(e: any) => setQuestions(questions.map(q => q.id === question.id ? { ...q, type_id: e.target.value } : q))}
+                            onChangeRequired={(e: any) => setQuestions(questions.map(q => q.id === question.id ? { ...q, required: e.target.checked } : q))}
+                            onDelete={() => handleDeleteQuestion(question.id)}
+                            questionTypes={questionTypes}
+                            renderConfigComponent={renderConfigComponent}
+                          />
+                        ))}
                       </div>
-                    );
-                  })}
+                    </SortableContext>
+                  </DndContext>
 
                   <div className="pt-4">
                     <button 
@@ -894,6 +885,95 @@ export function Surveys() {
         </div>
       )}
 
+    </div>
+  );
+}
+
+export function SortableQuestionCard({
+  question,
+  sectionIndex,
+  isActive,
+  onActivate,
+  onChangeLabel,
+  onChangeType,
+  onChangeRequired,
+  onDelete,
+  questionTypes,
+  renderConfigComponent
+}: any) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ 
+    id: question.id,
+    disabled: question.isFixed
+  });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    zIndex: isDragging ? 10 : 1,
+    position: 'relative' as any,
+  };
+
+  return (
+    <div 
+      ref={setNodeRef} 
+      style={style} 
+      onClick={onActivate} 
+      className={cn("bg-white rounded-xl border transition-all shadow-sm overflow-hidden cursor-pointer group", isActive ? "border-indigo-600 ring-1 ring-indigo-500/10" : "border-gray-200", isDragging && "shadow-xl border-indigo-400 opacity-90 scale-[1.02]")}
+    >
+      <div className="p-6 relative">
+        {isActive && <div className="absolute top-0 bottom-0 left-0 w-1 bg-indigo-600"></div>}
+        
+        {!question.isFixed && (
+          <div className="absolute top-0 left-0 right-0 h-6 flex justify-center items-center opacity-0 group-hover:opacity-100 transition-opacity cursor-grab active:cursor-grabbing" {...attributes} {...listeners}>
+            <GripHorizontal className="w-5 h-5 text-gray-300 hover:text-gray-500" />
+          </div>
+        )}
+        
+        <div className={cn("flex justify-between items-start mb-6", !question.isFixed && "mt-2")}>
+          <input 
+            type="text" 
+            value={question.label}
+            placeholder="Enter your question here..."
+            onChange={onChangeLabel}
+            disabled={question.isFixed}
+            className={cn("w-full font-bold text-gray-800 border-b border-transparent hover:border-gray-300 focus:border-indigo-500 focus:outline-none pb-1.5 text-base transition-colors", question.isFixed && "bg-transparent cursor-not-allowed text-gray-600 hover:border-transparent")}
+          />
+          <div className="flex items-center gap-2 ml-4">
+            {!(question.isFixed || (sectionIndex === 1 && !question.isFixed)) && (
+              <select 
+                value={question.type_id}
+                onChange={onChangeType}
+                className="px-3 py-1.5 bg-gray-50 border border-gray-100 rounded-lg text-xs font-semibold text-gray-500 cursor-pointer"
+              >
+                {questionTypes.map((qt: any) => <option key={qt.id} value={qt.id}>{qt.label}</option>)}
+              </select>
+            )}
+            {!question.isFixed && (
+              <div className="flex items-center border-l border-gray-100 pl-2 ml-2">
+                <button onClick={(e: any) => { e.stopPropagation(); onDelete(); }} className="p-1.5 text-gray-400 hover:text-red-500 transition-colors" title="Delete Question"><Trash2 className="w-4 h-4" /></button>
+              </div>
+            )}
+          </div>
+        </div>
+        
+        {renderConfigComponent(question.type_id)}
+        
+        <div className="mt-4 flex items-center justify-end border-t border-gray-50 pt-3">
+          {question.isFixed ? (
+            <span className="flex items-center gap-1.5 text-xs font-semibold text-gray-400">
+              <CheckCircle2 className="w-4 h-4" /> Required
+            </span>
+          ) : (
+            <label className="flex items-center gap-2 text-xs font-semibold cursor-pointer text-gray-600">
+              <input 
+                type="checkbox" 
+                checked={question.required} 
+                onChange={onChangeRequired} 
+              /> Required
+            </label>
+          )}
+        </div>
+      </div>
     </div>
   );
 }
