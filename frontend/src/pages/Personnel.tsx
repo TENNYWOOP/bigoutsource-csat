@@ -1,5 +1,6 @@
 import { Search, UserPlus, Edit2, Trash2, X, Sparkles, RotateCcw, Building, ArrowUpDown, ArrowUp, ArrowDown, Users, ChevronDown, Shield, ShieldAlert, UserCheck, ShieldCheck, List } from 'lucide-react';
 import { useEffect, useState } from 'react';
+import { motion } from 'motion/react';
 import { api } from '../lib/api';
 import { useAuth } from '../lib/auth';
 import { useToast } from '../components/Toast';
@@ -224,18 +225,32 @@ export function Personnel() {
     <div className="h-full w-full">
       {/* Pill Tabs */}
       <div className="flex items-center mb-6">
-        <div className="bg-white rounded-xl p-1.5 flex shadow-sm border border-gray-100/60">
+        <div className="bg-white rounded-xl p-1.5 flex shadow-sm border border-gray-100/60 relative">
           <button 
             onClick={() => setActiveTab('Members')}
-            className={`px-6 py-2 rounded-lg text-[13px] font-bold transition-all ${activeTab === 'Members' ? 'bg-[#15233E] text-white shadow-sm' : 'text-gray-500 hover:text-gray-900'}`}
+            className={`relative px-6 py-2 text-[13px] font-bold transition-colors z-10 ${activeTab === 'Members' ? 'text-white' : 'text-gray-500 hover:text-gray-900'}`}
           >
+            {activeTab === 'Members' && (
+              <motion.div
+                layoutId="personnelTabBackground"
+                className="absolute inset-0 bg-[#15233E] rounded-lg shadow-sm -z-10"
+                transition={{ type: 'spring', bounce: 0.2, duration: 0.6 }}
+              />
+            )}
             Members
           </button>
           {isGlobal() && (
             <button 
               onClick={() => setActiveTab('Departments')}
-              className={`px-6 py-2 rounded-lg text-[13px] font-bold transition-all ${activeTab === 'Departments' ? 'bg-[#15233E] text-white shadow-sm' : 'text-gray-500 hover:text-gray-900'}`}
+              className={`relative px-6 py-2 text-[13px] font-bold transition-colors z-10 ${activeTab === 'Departments' ? 'text-white' : 'text-gray-500 hover:text-gray-900'}`}
             >
+              {activeTab === 'Departments' && (
+                <motion.div
+                  layoutId="personnelTabBackground"
+                  className="absolute inset-0 bg-[#15233E] rounded-lg shadow-sm -z-10"
+                  transition={{ type: 'spring', bounce: 0.2, duration: 0.6 }}
+                />
+              )}
               Departments
             </button>
           )}
@@ -853,9 +868,14 @@ export function Personnel() {
                   />
                 </div>
               </div>
-              <button onClick={handleCreateDept} className="w-full bg-blue-600 text-white font-semibold py-2 rounded-lg mt-2 hover:bg-blue-700 transition-colors">
+              <motion.button 
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.95 }}
+                onClick={handleCreateDept} 
+                className="w-full bg-blue-600 text-white font-semibold py-2 rounded-lg mt-2 hover:bg-blue-700 transition-colors"
+              >
                 Create Department
-              </button>
+              </motion.button>
             </div>
           </div>
         </div>

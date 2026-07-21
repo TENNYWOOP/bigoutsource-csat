@@ -23,6 +23,7 @@ import { cn } from '../lib/utils';
 import { api } from '../lib/api';
 import { useAuth } from '../lib/auth';
 import { useToast } from '../components/Toast';
+import { motion } from 'motion/react';
 
 interface Question {
   id: string;
@@ -234,6 +235,12 @@ export function Surveys() {
   const handleLaunchCampaign = async (status: 'ACTIVE' | 'DRAFT') => {
     if (!surveyTitle.trim()) {
       toast.error('Please enter a survey title.');
+      return;
+    }
+
+    const targetDept = isGlobal() ? selectedDeptId : user?.department_id;
+    if (!targetDept) {
+      toast.error('Please select a target department for this survey.');
       return;
     }
 
@@ -695,9 +702,16 @@ export function Surveys() {
         </div>
         
         {canManage() && (
-          <button onClick={() => setIsCreating(true)} className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-5 py-2.5 rounded-lg text-sm font-semibold transition-colors shadow-sm cursor-pointer">
-            <Plus className="w-4 h-4" /> Launch Survey Campaign
-          </button>
+          <div className="flex gap-3">
+            <motion.button 
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.95 }}
+              onClick={() => setIsCreating(true)} 
+              className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-5 py-2.5 rounded-lg text-sm font-semibold transition-colors shadow-sm cursor-pointer"
+            >
+              <Plus className="w-4 h-4" /> Create Survey Campaign
+            </motion.button>
+          </div>
         )}
       </div>
 
@@ -768,9 +782,17 @@ export function Surveys() {
                 <button onClick={() => handleLaunchCampaign('DRAFT')} className="flex items-center gap-2 px-4 py-2 border border-gray-200 rounded-lg text-sm font-semibold text-gray-700 bg-white shadow-sm">
                   <Save className="w-4 h-4" /> Save as Draft
                 </button>
-                <button onClick={() => handleLaunchCampaign('ACTIVE')} className="flex items-center gap-2 px-5 py-2 bg-blue-600 text-white rounded-lg text-sm font-semibold shadow-sm">
-                  <Send className="w-4 h-4" /> Launch Campaign
-                </button>
+                <div className="flex justify-end gap-3 pt-6 border-t border-gray-100">
+                  <button onClick={() => setIsCreating(false)} className="px-5 py-2 text-gray-500 font-semibold text-sm hover:text-gray-700">Cancel</button>
+                  <motion.button 
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.95 }}
+                    onClick={() => handleLaunchCampaign('ACTIVE')} 
+                    className="flex items-center gap-2 px-5 py-2 bg-blue-600 text-white rounded-lg text-sm font-semibold shadow-sm"
+                  >
+                    <Send className="w-4 h-4" /> Launch Campaign
+                  </motion.button>
+                </div>
               </div>
             </div>
 
