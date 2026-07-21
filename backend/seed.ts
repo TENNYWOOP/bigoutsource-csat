@@ -37,6 +37,7 @@ async function main() {
     data: {
       name: 'Sarah Vance',
       email: 'superadmin@bigoutsource.com',
+      password: 'password',
       role_id: roleSuperAdmin.id
     }
   });
