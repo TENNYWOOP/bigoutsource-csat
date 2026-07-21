@@ -85,7 +85,7 @@ app.post('/api/auth/login', async (req, res) => {
     }
   });
   if (!user) return res.status(401).json({ error: 'User not found' });
-  if (user.password !== password) return res.status(401).json({ error: 'Invalid email or password' });
+  if ((user as any).password !== password) return res.status(401).json({ error: 'Invalid email or password' });
   if (user.status === 'INACTIVE') return res.status(403).json({ error: 'Your account has been deactivated. Please contact an administrator.' });
   
   await logAudit(user.id, user.department_id, 'User login', 'Security', req.ip || '127.0.0.1');
