@@ -34,6 +34,7 @@ export function Personnel() {
   const [provJobTitle, setProvJobTitle] = useState('');
   const [provRoleId, setProvRoleId] = useState('');
   const [provDeptId, setProvDeptId] = useState('');
+  const [currentStep, setCurrentStep] = useState(1);
 
   // Edit Form State
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -564,52 +565,196 @@ export function Personnel() {
 
       {/* Provision Modal */}
       {showProvisionModal && (
-        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-xl p-6 w-full max-w-2xl flex flex-col shadow-2xl">
-            <div className="flex justify-between items-center mb-6">
-              <h3 className="text-xl font-bold">Provision New Personnel</h3>
-              <button onClick={() => setShowProvisionModal(false)}><X className="w-5 h-5 text-gray-500 hover:text-gray-900" /></button>
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-[24px] p-8 w-full max-w-[440px] flex flex-col shadow-2xl relative animate-in fade-in zoom-in duration-200">
+            
+            <button onClick={() => { setShowProvisionModal(false); setCurrentStep(1); }} className="absolute right-5 top-5 text-gray-400 hover:text-gray-600 transition-colors">
+              <X className="w-5 h-5" />
+            </button>
+            
+            <div className="flex flex-col items-center mb-8 text-center mt-2">
+              <img src="/logo-only-bigoutsource.svg" alt="Big Outsource" className="w-16 h-16 mb-5" />
+              <h3 className="text-[22px] font-black text-gray-900 tracking-tight mb-2">Create an Account</h3>
+              <p className="text-sm font-medium text-gray-500">Fill in the details to request system access.</p>
             </div>
             
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-semibold mb-1">Name</label>
-                <input type="text" value={provName} onChange={e => setProvName(e.target.value)} className="w-full border rounded px-3 py-2 text-sm" />
+            {/* Horizontal Stepper */}
+            <div className="flex items-center justify-center mb-10 px-4">
+              <div className="flex flex-col items-center gap-2 relative">
+                <div className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold border-2 z-10 bg-white ${currentStep === 1 ? 'border-gray-900 text-gray-900' : 'border-gray-900 text-gray-900'}`}>
+                  {currentStep > 1 ? (
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                  ) : '1'}
+                </div>
+                <div className="text-[9px] font-black uppercase tracking-widest text-center leading-tight">User<br/>Information</div>
               </div>
-              <div>
-                <label className="block text-sm font-semibold mb-1">Email</label>
-                <input type="email" value={provEmail} onChange={e => setProvEmail(e.target.value)} className="w-full border rounded px-3 py-2 text-sm" />
+              
+              <div className={`w-48 h-[2px] mx-3 -mt-6 ${currentStep > 1 ? 'bg-gray-900' : 'bg-gray-200'}`}></div>
+              
+              <div className="flex flex-col items-center gap-2">
+                <div className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold border-2 bg-white ${currentStep === 2 ? 'border-gray-900 text-gray-900' : 'border-gray-300 text-gray-400'}`}>
+                  2
+                </div>
+                <div className={`text-[9px] font-black uppercase tracking-widest text-center leading-tight ${currentStep === 2 ? 'text-gray-900' : 'text-gray-400'}`}>Work<br/>Details</div>
               </div>
-              <div className={!isGlobal() ? "col-span-2" : ""}>
-                <label className="block text-sm font-semibold mb-1">Job Title</label>
-                <input type="text" value={provJobTitle} onChange={e => setProvJobTitle(e.target.value)} placeholder="e.g. Senior Agent" className="w-full border rounded px-3 py-2 text-sm" />
-              </div>
-              {isGlobal() && (
-                <div>
-                  <label className="block text-sm font-semibold mb-1">Role</label>
-                  <select value={provRoleId} onChange={e => setProvRoleId(e.target.value)} className="w-full border rounded px-3 py-2 text-sm">
-                    <option value="">Select a role...</option>
-                    {roles.filter(r => r.name !== 'SUPER ADMIN').map(r => (
-                      <option key={r.id} value={r.id}>{r.name}</option>
-                    ))}
-                  </select>
+            </div>
+
+            {/* Step Content */}
+            <div className="flex-1 min-h-[220px]">
+              {currentStep === 1 && (
+                <div className="space-y-6">
+                  <div>
+                    <label className="block text-[11px] font-black text-gray-800 uppercase tracking-widest mb-2">Full Name</label>
+                    <div className="relative">
+                      <div className="absolute left-3.5 top-1/2 -translate-y-1/2 text-red-400">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
+                      </div>
+                      <input 
+                        type="text" 
+                        value={provName} 
+                        onChange={e => setProvName(e.target.value)} 
+                        placeholder="e.g. Niño Dela Cruz" 
+                        className={`w-full border rounded-xl pl-10 pr-3 py-3 text-sm font-semibold text-gray-800 placeholder:text-red-300 focus:outline-none transition-shadow ${provName.length > 0 && provName.length < 2 ? 'border-red-400 focus:ring-1 focus:ring-red-400' : 'border-red-400 focus:border-red-500 focus:ring-1 focus:ring-red-500'}`} 
+                      />
+                    </div>
+                    {provName.length > 0 && provName.length < 2 && (
+                      <div className="text-[11px] font-bold text-red-500 mt-2">Full name must be at least 2 characters.</div>
+                    )}
+                  </div>
+
+                  <div>
+                    <label className="block text-[11px] font-black text-gray-800 uppercase tracking-widest mb-2">Email Address</label>
+                    <div className="relative">
+                      <div className="absolute left-3.5 top-1/2 -translate-y-1/2 text-red-400">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path><polyline points="22,6 12,13 2,6"></polyline></svg>
+                      </div>
+                      <input 
+                        type="email" 
+                        value={provEmail} 
+                        onChange={e => setProvEmail(e.target.value)} 
+                        placeholder="name@bigoutsource.com" 
+                        className={`w-full border rounded-xl pl-10 pr-3 py-3 text-sm font-semibold text-gray-800 placeholder:text-red-300 focus:outline-none transition-shadow ${provEmail.length > 0 && !provEmail.includes('@') ? 'border-red-400 focus:ring-1 focus:ring-red-400' : 'border-red-400 focus:border-red-500 focus:ring-1 focus:ring-red-500'}`} 
+                      />
+                    </div>
+                    {provEmail.length > 0 && !provEmail.includes('@') && (
+                      <div className="text-[11px] font-bold text-red-500 mt-2">Enter a valid email address.</div>
+                    )}
+                  </div>
                 </div>
               )}
-              {isGlobal() && (
-                <div className="col-span-2">
-                  <label className="block text-sm font-semibold mb-1">Department</label>
-                  <select value={provDeptId} onChange={e => setProvDeptId(e.target.value)} className="w-full border rounded px-3 py-2 text-sm">
-                    <option value="">Select a department...</option>
-                    {departments.map(d => (
-                      <option key={d.id} value={d.id}>{d.name}</option>
-                    ))}
-                  </select>
+
+              {currentStep === 2 && (
+                <div className="space-y-6">
+                  {isGlobal() && (
+                    <div>
+                      <label className="block text-[11px] font-black text-gray-800 uppercase tracking-widest mb-2">Department</label>
+                      <div className="relative">
+                        <div className={`absolute left-3.5 top-1/2 -translate-y-1/2 ${!provDeptId ? 'text-red-400' : 'text-gray-400'}`}>
+                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="4" y="2" width="16" height="20" rx="2" ry="2"></rect><path d="M9 22v-4h6v4"></path><path d="M8 6h.01"></path><path d="M16 6h.01"></path><path d="M12 6h.01"></path><path d="M12 10h.01"></path><path d="M12 14h.01"></path><path d="M16 10h.01"></path><path d="M16 14h.01"></path><path d="M8 10h.01"></path><path d="M8 14h.01"></path></svg>
+                        </div>
+                        <select 
+                          value={provDeptId} 
+                          onChange={e => setProvDeptId(e.target.value)} 
+                          className={`w-full border rounded-xl pl-10 pr-10 py-3 text-sm font-semibold text-gray-800 focus:outline-none appearance-none bg-transparent transition-shadow cursor-pointer ${!provDeptId ? 'border-red-400 focus:border-red-500 focus:ring-1 focus:ring-red-500 text-red-400' : 'border-gray-200 focus:border-blue-500 focus:ring-1 focus:ring-blue-500'}`}
+                        >
+                          <option value="" disabled className="text-gray-400">Select department</option>
+                          {departments.map(d => (
+                            <option key={d.id} value={d.id} className="text-gray-800">{d.name}</option>
+                          ))}
+                        </select>
+                        <div className={`absolute right-3.5 top-1/2 -translate-y-1/2 pointer-events-none ${!provDeptId ? 'text-red-400' : 'text-gray-400'}`}>
+                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>
+                        </div>
+                      </div>
+                      {!provDeptId && (
+                        <div className="text-[11px] font-bold text-red-500 mt-2">Select a department.</div>
+                      )}
+                    </div>
+                  )}
+
+                  <div>
+                    <label className="block text-[11px] font-black text-gray-800 uppercase tracking-widest mb-2">Job Title</label>
+                    <div className="relative">
+                      <div className={`absolute left-3.5 top-1/2 -translate-y-1/2 ${!provJobTitle ? 'text-red-400' : 'text-gray-400'}`}>
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="7" width="20" height="14" rx="2" ry="2"></rect><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"></path></svg>
+                      </div>
+                      <input 
+                        type="text" 
+                        value={provJobTitle} 
+                        onChange={e => setProvJobTitle(e.target.value)} 
+                        placeholder="Select job title" 
+                        className={`w-full border rounded-xl pl-10 pr-3 py-3 text-sm font-semibold text-gray-800 focus:outline-none transition-shadow ${!provJobTitle ? 'border-red-400 placeholder:text-red-300 focus:border-red-500 focus:ring-1 focus:ring-red-500' : 'border-gray-200 focus:border-blue-500 focus:ring-1 focus:ring-blue-500'}`} 
+                      />
+                    </div>
+                    {!provJobTitle && (
+                      <div className="text-[11px] font-bold text-red-500 mt-2">Select a job title.</div>
+                    )}
+                  </div>
+
+                  {isGlobal() && (
+                    <div>
+                      <label className="block text-[11px] font-black text-gray-800 uppercase tracking-widest mb-2">Role</label>
+                      <div className="relative">
+                        <div className={`absolute left-3.5 top-1/2 -translate-y-1/2 ${!provRoleId ? 'text-red-400' : 'text-gray-400'}`}>
+                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>
+                        </div>
+                        <select 
+                          value={provRoleId} 
+                          onChange={e => setProvRoleId(e.target.value)} 
+                          className={`w-full border rounded-xl pl-10 pr-10 py-3 text-sm font-semibold text-gray-800 focus:outline-none appearance-none bg-transparent transition-shadow cursor-pointer ${!provRoleId ? 'border-red-400 focus:border-red-500 focus:ring-1 focus:ring-red-500 text-red-400' : 'border-gray-200 focus:border-blue-500 focus:ring-1 focus:ring-blue-500'}`}
+                        >
+                          <option value="" disabled className="text-gray-400">Select role</option>
+                          {roles.filter(r => r.name !== 'SUPER ADMIN').map(r => (
+                            <option key={r.id} value={r.id} className="text-gray-800">{r.name}</option>
+                          ))}
+                        </select>
+                        <div className={`absolute right-3.5 top-1/2 -translate-y-1/2 pointer-events-none ${!provRoleId ? 'text-red-400' : 'text-gray-400'}`}>
+                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>
+                        </div>
+                      </div>
+                      {!provRoleId && (
+                        <div className="text-[11px] font-bold text-red-500 mt-2">Select a role.</div>
+                      )}
+                    </div>
+                  )}
                 </div>
               )}
             </div>
-            <button onClick={handleProvision} className="w-full bg-blue-600 text-white font-semibold py-2.5 rounded mt-6 hover:bg-blue-700 transition-colors">
-              Provision Personnel
-            </button>
+
+            {/* Action Bar */}
+            <div className="flex gap-4 mt-8">
+              <button 
+                onClick={() => {
+                  if (currentStep === 1) {
+                    setShowProvisionModal(false);
+                  } else {
+                    setCurrentStep(1);
+                  }
+                }} 
+                className="flex-1 py-3.5 rounded-xl border border-transparent bg-gray-50 text-sm font-bold text-gray-700 hover:bg-gray-100 transition-colors"
+              >
+                Back
+              </button>
+              
+              {currentStep === 1 ? (
+                <button 
+                  onClick={() => setCurrentStep(2)}
+                  disabled={!provName || !provEmail || provEmail.length === 0 || !provEmail.includes('@')}
+                  className="flex-1 py-3.5 rounded-xl bg-[#838994] text-white text-sm font-bold hover:bg-[#6b717b] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  Next
+                </button>
+              ) : (
+                <button 
+                  onClick={() => { handleProvision(); setCurrentStep(1); }}
+                  disabled={isGlobal() && (!provRoleId || !provDeptId || !provJobTitle)}
+                  className="flex-1 py-3.5 rounded-xl bg-[#838994] text-white text-sm font-bold hover:bg-[#6b717b] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  Create Account
+                </button>
+              )}
+            </div>
+            
           </div>
         </div>
       )}
