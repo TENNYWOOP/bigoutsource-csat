@@ -135,6 +135,8 @@ export function Login() {
   const [rememberOption, setRememberOption] = useState('none');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [emailError, setEmailError] = useState(false);
+  const [passwordError, setPasswordError] = useState(false);
 
   const { login } = useAuth();
 
@@ -143,18 +145,120 @@ export function Login() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
+    setEmailError(false);
+    setPasswordError(false);
+    if (!password.trim()) {
+      setError('Password is required');
+      setPasswordError(true);
+      return;
+    }
     setLoading(true);
     try {
-      await login(email);
+      await login(email, password);
     } catch (err: any) {
-      setError(err.message || 'Login failed');
+      let displayError = 'Login failed';
+      if (err.message) {
+        try {
+          const parsed = JSON.parse(err.message);
+          displayError = parsed.error || err.message;
+        } catch {
+          displayError = err.message;
+        }
+      }
+      setError(displayError);
+      setEmailError(true);
+      setPasswordError(true);
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="min-h-screen w-screen flex flex-col md:flex-row overflow-hidden bg-white transition-colors duration-300">
+    <div className="min-h-screen w-screen flex flex-col md:flex-row overflow-hidden bg-white dark:bg-slate-900 transition-colors duration-300">
+      
+      {/* Absolute Bulletproof Styling Overrides to prevent dark-mode color clashes */}
+      <style>{`
+        @keyframes bob {
+          0%, 100% { transform: translateY(0px); }
+          50% { transform: translateY(-10px); }
+        }
+        .animate-bob {
+          animation: bob 4s ease-in-out infinite;
+        }
+        @keyframes scaleIn {
+          from { transform: scale(0); }
+          to { transform: scale(1); }
+        }
+        .animate-scale-in {
+          animation: scaleIn 0.2s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+        }
+
+        /* Enforce light background for right panel */
+        #login-form-container {
+          background-color: #e9edf1 !important;
+        }
+
+        /* Headings & Taglines */
+        #login-form-container h2 {
+          color: #1e293b !important;
+        }
+        #login-form-container p,
+        #login-form-container .text-slate-500 {
+          color: #475569 !important;
+        }
+
+        /* Inputs (TextBoxes) forced to be White with Dark Text */
+        #login-form-container input[type="email"],
+        #login-form-container input[type="password"] {
+          background-color: #ffffff !important;
+          color: #0f172a !important;
+          border: 1px solid #cbd5e1 !important;
+        }
+        #login-form-container input.border-red-400 {
+          border: 1px solid #f87171 !important;
+        }
+        #login-form-container input.border-red-400:focus {
+          border-color: #ef4444 !important;
+          box-shadow: 0 0 0 2px rgba(239, 68, 68, 0.2) !important;
+        }
+        #login-form-container input::placeholder {
+          color: #94a3b8 !important;
+        }
+
+        /* Input Labels & Option Labels */
+        #login-form-container label {
+          color: #334155 !important;
+        }
+
+        /* Anchor Links & Buttons */
+        #login-form-container a {
+          color: #3f5aa6 !important;
+        }
+        #login-form-container a:hover {
+          text-decoration: underline !important;
+        }
+
+        /* Left illustration credits tagline */
+        .login-footer-tagline {
+          color: #64748b !important;
+        }
+
+        /* Floating Chat Bubbles forced to be White */
+        .login-bubble {
+          background-color: #ffffff !important;
+        }
+        .login-bubble-tail {
+          background-color: #ffffff !important;
+        }
+
+        /* Chat Bubble Text color rules */
+        .login-bubble-text-pink {
+          color: #c96a7a !important;
+        }
+        .login-bubble-text-default {
+          color: #43536e !important;
+        }
+      `}</style>
 
       {/* LEFT: Full Screen Animated Illustration Side */}
       <div 
@@ -257,9 +361,16 @@ export function Login() {
                 type="email"
                 required
                 value={email}
-                onChange={(e) => setEmail(e.target.value)}
+                onChange={(e) => {
+                  setEmail(e.target.value);
+                  setEmailError(false);
+                }}
                 placeholder="e.g. superadmin@bigoutsource.com"
-                className="w-full px-4 py-3 bg-white border border-slate-300 rounded-lg text-slate-900 text-sm focus:ring-2 focus:ring-[#3f5aa6]/20 focus:border-[#3f5aa6] outline-none transition-all font-medium placeholder-slate-400"
+                className={`w-full px-4 py-3 bg-[#f8fafc] dark:bg-slate-950 border rounded-lg text-slate-900 dark:text-slate-100 text-sm outline-none transition-all font-medium placeholder-slate-400 ${
+                  emailError 
+                    ? 'border-red-400 focus:border-red-500 focus:ring-2 focus:ring-red-500/20' 
+                    : 'border-slate-300 dark:border-slate-800 focus:ring-2 focus:ring-[#3f5aa6]/20 focus:border-[#3f5aa6]'
+                }`}
               />
             </div>
 
@@ -271,10 +382,18 @@ export function Login() {
               <div className="relative">
                 <input
                   type={showPassword ? 'text' : 'password'}
+                  required
                   value={password}
-                  onChange={(e) => setPassword(e.target.value)}
+                  onChange={(e) => {
+                    setPassword(e.target.value);
+                    setPasswordError(false);
+                  }}
                   placeholder="••••••••"
-                  className="w-full px-4 py-3 bg-white border border-slate-300 rounded-lg text-slate-900 text-sm focus:ring-2 focus:ring-[#3f5aa6]/20 focus:border-[#3f5aa6] outline-none transition-all font-medium placeholder-slate-400 pr-10"
+                  className={`w-full px-4 py-3 bg-[#f8fafc] dark:bg-slate-950 border rounded-lg text-slate-900 dark:text-slate-100 text-sm outline-none transition-all font-medium placeholder-slate-400 pr-10 ${
+                    passwordError 
+                      ? 'border-red-400 focus:border-red-500 focus:ring-2 focus:ring-red-500/20' 
+                      : 'border-slate-300 dark:border-slate-800 focus:ring-2 focus:ring-[#3f5aa6]/20 focus:border-[#3f5aa6]'
+                  }`}
                 />
                 <button
                   type="button"
@@ -286,38 +405,54 @@ export function Login() {
               </div>
             </div>
 
-            {/* Remember Me / Session Options */}
-            <div className="pt-1.5 space-y-3">
-              <label className="flex items-center gap-3 text-sm text-slate-700 font-medium cursor-pointer">
-                <input
-                  type="radio"
-                  name="remember"
-                  checked={rememberOption === 'auto'}
-                  onChange={() => setRememberOption('auto')}
-                  className="w-5 h-5 text-[#3f5aa6] focus:ring-[#3f5aa6] border-slate-300"
-                />
-                Log me on automatically each visit
-              </label>
-              <label className="flex items-center gap-3 text-sm text-slate-700 font-medium cursor-pointer">
-                <input
-                  type="radio"
-                  name="remember"
-                  checked={rememberOption === 'username'}
-                  onChange={() => setRememberOption('username')}
-                  className="w-5 h-5 text-[#3f5aa6] focus:ring-[#3f5aa6] border-slate-300"
-                />
-                Remember just my username
-              </label>
-              <label className="flex items-center gap-3 text-sm text-slate-700 font-medium cursor-pointer">
-                <input
-                  type="radio"
-                  name="remember"
-                  checked={rememberOption === 'none'}
-                  onChange={() => setRememberOption('none')}
-                  className="w-5 h-5 text-[#3f5aa6] focus:ring-[#3f5aa6] border-slate-300"
-                />
-                No, thanks
-              </label>
+             {/* Remember Me / Session Options */}
+            <div className="pt-1.5 space-y-2.5">
+              <span className="block text-[11px] font-bold text-slate-500 uppercase tracking-widest mb-1.5">
+                Session Preferences
+              </span>
+              {[
+                { id: 'auto', label: 'Log me on automatically each visit', desc: 'Stay signed in on this device' },
+                { id: 'username', label: 'Remember just my username', desc: 'Saves your email for next time' },
+                { id: 'none', label: 'No, thanks', desc: 'Sign out when browser closes' }
+              ].map((opt) => {
+                const isSelected = rememberOption === opt.id;
+                return (
+                  <div
+                    key={opt.id}
+                    onClick={() => setRememberOption(opt.id)}
+                    className={`flex items-center gap-4.5 p-3.5 rounded-xl border-2 cursor-pointer transition-all duration-200 select-none ${
+                      isSelected
+                        ? 'border-[#3f5aa6] bg-white shadow-sm'
+                        : 'border-slate-200 bg-white hover:border-slate-300 hover:bg-slate-50/50'
+                    }`}
+                  >
+                    {/* Custom Radio Indicator */}
+                    <div
+                      className={`w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0 transition-all duration-200 ${
+                        isSelected
+                          ? 'border-[#3f5aa6] bg-[#3f5aa6]'
+                          : 'border-slate-350 bg-white'
+                      }`}
+                    >
+                      {isSelected && (
+                        <div className="w-1.5 h-1.5 rounded-full bg-white animate-scale-in" />
+                      )}
+                    </div>
+                    
+                    {/* Label & Desc */}
+                    <div className="flex flex-col">
+                      <span className={`text-[13px] font-black tracking-tight leading-none transition-colors ${
+                        isSelected ? 'text-[#3f5aa6]' : 'text-slate-700'
+                      }`}>
+                        {opt.label}
+                      </span>
+                      <span className="text-[10px] font-semibold text-slate-400 mt-1 leading-none">
+                        {opt.desc}
+                      </span>
+                    </div>
+                  </div>
+                );
+              })}
             </div>
 
             {/* Submit Action Button */}

@@ -32,7 +32,6 @@ export function Personnel() {
   // Provision Form
   const [provName, setProvName] = useState('');
   const [provEmail, setProvEmail] = useState('');
-  const [provJobTitle, setProvJobTitle] = useState('');
   const [provRoleId, setProvRoleId] = useState('');
   const [provDeptId, setProvDeptId] = useState('');
   const [currentStep, setCurrentStep] = useState(1);
@@ -100,7 +99,7 @@ export function Personnel() {
   const handleProvision = async () => {
     const finalDeptId = isGlobal() ? provDeptId : user?.department_id;
     const finalRoleId = isGlobal() ? provRoleId : roles.find(r => r.name === 'PERSONNEL')?.id;
-    if (!provName || !provEmail || !finalRoleId || !finalDeptId || !provJobTitle) {
+    if (!provName || !provEmail || !finalRoleId || !finalDeptId) {
       toast.error('Fill all fields');
       return;
     }
@@ -108,14 +107,12 @@ export function Personnel() {
       await api.post('/personnel', {
         name: provName,
         email: provEmail,
-        job_title: provJobTitle,
         role_id: finalRoleId,
         department_id: finalDeptId
       });
       setShowProvisionModal(false);
       setProvName('');
       setProvEmail('');
-      setProvJobTitle('');
       fetchData();
       toast.success('Personnel provisioned successfully!');
     } catch (e: any) {
@@ -629,7 +626,7 @@ export function Personnel() {
                   <div>
                     <label className="block text-[11px] font-black text-gray-800 uppercase tracking-widest mb-2">Full Name</label>
                     <div className="relative">
-                      <div className="absolute left-3.5 top-1/2 -translate-y-1/2 text-red-400">
+                      <div className={`absolute left-3.5 top-1/2 -translate-y-1/2 transition-colors ${provName.length > 0 && provName.length < 2 ? 'text-red-400' : 'text-gray-400'}`}>
                         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
                       </div>
                       <input 
@@ -637,7 +634,7 @@ export function Personnel() {
                         value={provName} 
                         onChange={e => setProvName(e.target.value)} 
                         placeholder="e.g. Niño Dela Cruz" 
-                        className={`w-full border rounded-xl pl-10 pr-3 py-3 text-sm font-semibold text-gray-800 placeholder:text-red-300 focus:outline-none transition-shadow ${provName.length > 0 && provName.length < 2 ? 'border-red-400 focus:ring-1 focus:ring-red-400' : 'border-red-400 focus:border-red-500 focus:ring-1 focus:ring-red-500'}`} 
+                        className={`w-full border rounded-xl pl-10 pr-3 py-3 text-sm font-semibold text-gray-800 placeholder:text-gray-400 focus:outline-none transition-shadow ${provName.length > 0 && provName.length < 2 ? 'border-red-400 focus:border-red-500 focus:ring-1 focus:ring-red-500' : 'border-gray-200 focus:border-blue-500 focus:ring-1 focus:ring-blue-500'}`} 
                       />
                     </div>
                     {provName.length > 0 && provName.length < 2 && (
@@ -648,7 +645,7 @@ export function Personnel() {
                   <div>
                     <label className="block text-[11px] font-black text-gray-800 uppercase tracking-widest mb-2">Email Address</label>
                     <div className="relative">
-                      <div className="absolute left-3.5 top-1/2 -translate-y-1/2 text-red-400">
+                      <div className={`absolute left-3.5 top-1/2 -translate-y-1/2 transition-colors ${provEmail.length > 0 && !provEmail.includes('@') ? 'text-red-400' : 'text-gray-400'}`}>
                         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path><polyline points="22,6 12,13 2,6"></polyline></svg>
                       </div>
                       <input 
@@ -656,7 +653,7 @@ export function Personnel() {
                         value={provEmail} 
                         onChange={e => setProvEmail(e.target.value)} 
                         placeholder="name@bigoutsource.com" 
-                        className={`w-full border rounded-xl pl-10 pr-3 py-3 text-sm font-semibold text-gray-800 placeholder:text-red-300 focus:outline-none transition-shadow ${provEmail.length > 0 && !provEmail.includes('@') ? 'border-red-400 focus:ring-1 focus:ring-red-400' : 'border-red-400 focus:border-red-500 focus:ring-1 focus:ring-red-500'}`} 
+                        className={`w-full border rounded-xl pl-10 pr-3 py-3 text-sm font-semibold text-gray-800 placeholder:text-gray-400 focus:outline-none transition-shadow ${provEmail.length > 0 && !provEmail.includes('@') ? 'border-red-400 focus:border-red-500 focus:ring-1 focus:ring-red-500' : 'border-gray-200 focus:border-blue-500 focus:ring-1 focus:ring-blue-500'}`} 
                       />
                     </div>
                     {provEmail.length > 0 && !provEmail.includes('@') && (

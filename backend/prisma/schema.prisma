@@ -30,6 +30,7 @@ model User {
   id            String      @id @default(uuid())
   name          String
   email         String      @unique
+  password      String      @default("password")
   role_id       String
   department_id String?
   job_title     String?
