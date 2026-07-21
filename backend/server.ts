@@ -28,7 +28,7 @@ app.use(async (req, res, next) => {
       }
     });
     
-    if (user) {
+    if (user && user.status === 'ACTIVE') {
       (req as any).user = user;
     }
   } catch (error) {
@@ -55,7 +55,7 @@ const requireRole = (allowedRoles: string[]) => {
   };
 };
 
-async function logAudit(userId: string, departmentId: string | null | undefined, action: string, category: string, ip: string) {
+async function logAudit(userId: string, departmentId: string | null | undefined, action: string, category: string, ip: string, details?: any) {
   try {
     await prisma.auditLog.create({
       data: {
@@ -63,7 +63,8 @@ async function logAudit(userId: string, departmentId: string | null | undefined,
         department_id: departmentId || null, // Optional department ID
         action_description: action,
         category,
-        ip_address: ip
+        ip_address: ip,
+        details: details ? JSON.stringify(details) : null
       }
     });
   } catch (e) {
@@ -84,6 +85,7 @@ app.post('/api/auth/login', async (req, res) => {
     }
   });
   if (!user) return res.status(401).json({ error: 'User not found' });
+  if (user.status === 'INACTIVE') return res.status(403).json({ error: 'Your account has been deactivated. Please contact an administrator.' });
   
   await logAudit(user.id, user.department_id, 'User login', 'Security', req.ip || '127.0.0.1');
   res.json({ token: email, user });
@@ -169,7 +171,7 @@ app.post('/api/personnel', requireRole(['SUPER ADMIN', 'DEPARTMENT ADMIN']), asy
 
 app.put('/api/personnel/:id', requireRole(['SUPER ADMIN', 'DEPARTMENT ADMIN']), async (req: any, res: any) => {
   const { id } = req.params;
-  const { name, role_id, department_id } = req.body;
+  const { name, role_id, department_id, status } = req.body;
 
   try {
     const existing = await prisma.user.findUnique({
@@ -191,11 +193,28 @@ app.put('/api/personnel/:id', requireRole(['SUPER ADMIN', 'DEPARTMENT ADMIN']), 
       data: {
         name,
         role_id,
-        department_id: department_id || null
+        department_id: department_id || null,
+        status: status || existing.status
       }
     });
 
-    await logAudit(req.user.id, department_id, `Updated personnel member: ${name}`, 'Personnel', req.ip);
+    // Calculate diff
+    const diff: any = { before: {}, after: {} };
+    if (existing.name !== updated.name) { diff.before.name = existing.name; diff.after.name = updated.name; }
+    if (existing.role_id !== updated.role_id) { diff.before.role_id = existing.role_id; diff.after.role_id = updated.role_id; }
+    if (existing.department_id !== updated.department_id) { diff.before.department_id = existing.department_id; diff.after.department_id = updated.department_id; }
+    if (existing.status !== updated.status) { diff.before.status = existing.status; diff.after.status = updated.status; }
+
+    const hasChanges = Object.keys(diff.before).length > 0;
+
+    await logAudit(
+      req.user.id, 
+      department_id, 
+      `Updated personnel member: ${name}`, 
+      'Personnel', 
+      req.ip,
+      hasChanges ? diff : null
+    );
     res.json(updated);
   } catch (error: any) {
     res.status(500).json({ error: error.message });

@@ -13,6 +13,7 @@ export function Personnel() {
   const [loading, setLoading] = useState(true);
   
   const [selectedDept, setSelectedDept] = useState('All Departments');
+  const [selectedStatus, setSelectedStatus] = useState('All Statuses');
   const [sortConfig, setSortConfig] = useState<{key: string, direction: 'asc' | 'desc' | null}>({ key: '', direction: null });
   const [deptSearchQuery, setDeptSearchQuery] = useState('');
   const [deptSortDirection, setDeptSortDirection] = useState<'asc' | 'desc' | null>(null);
@@ -41,6 +42,7 @@ export function Personnel() {
   const [editName, setEditName] = useState('');
   const [editRoleId, setEditRoleId] = useState('');
   const [editDeptId, setEditDeptId] = useState('');
+  const [editStatus, setEditStatus] = useState('ACTIVE');
 
   useEffect(() => {
     fetchData();
@@ -126,6 +128,7 @@ export function Personnel() {
     setEditName(person.name);
     setEditRoleId(person.role_id);
     setEditDeptId(person.department_id || '');
+    setEditStatus(person.status || 'ACTIVE');
   };
 
   const handleSaveEdit = async (id: string) => {
@@ -137,7 +140,8 @@ export function Personnel() {
       await api.put(`/personnel/${id}`, {
         name: editName.trim(),
         role_id: editRoleId,
-        department_id: editDeptId || null
+        department_id: editDeptId || null,
+        status: editStatus
       });
       setEditingId(null);
       fetchData();
@@ -160,6 +164,7 @@ export function Personnel() {
 
   let filteredPersonnel = personnel.filter(p => {
     if (selectedDept !== 'All Departments' && p.department?.name !== selectedDept) return false;
+    if (selectedStatus !== 'All Statuses' && (p.status || 'ACTIVE') !== selectedStatus) return false;
     return true;
   });
 
@@ -254,9 +259,14 @@ export function Personnel() {
             <ChevronDown className="w-4 h-4 text-gray-400 absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none" />
           </div>
           
-          <button className="bg-white border border-gray-100 shadow-sm text-gray-700 text-xs font-bold rounded-xl px-5 py-3 cursor-pointer outline-none hover:bg-gray-50 flex items-center gap-2 transition-colors">
-            All Statuses <ChevronDown className="w-4 h-4 text-gray-400" />
-          </button>
+          <div className="relative">
+            <select value={selectedStatus} onChange={e => setSelectedStatus(e.target.value)} className="appearance-none bg-white border border-gray-100 shadow-sm text-gray-700 text-xs font-bold rounded-xl pl-5 pr-10 py-3 cursor-pointer outline-none hover:bg-gray-50 transition-colors">
+              <option value="All Statuses">All Statuses</option>
+              <option value="ACTIVE">Active</option>
+              <option value="INACTIVE">Inactive</option>
+            </select>
+            <ChevronDown className="w-4 h-4 text-gray-400 absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none" />
+          </div>
           
           {activeTab === 'Members' && canManage() && (
             <button onClick={() => setShowProvisionModal(true)} className="flex items-center gap-2 bg-[#15233E] hover:bg-[#1a2b4c] text-white px-6 py-3 rounded-xl text-xs font-bold transition-colors shadow-sm ml-2">
@@ -423,7 +433,20 @@ export function Personnel() {
                       )}
                     </td>
                     <td className="px-6 py-4">
-                      <span className="text-[10px] font-bold text-emerald-600 uppercase tracking-wider">ACTIVE</span>
+                      {isEditing ? (
+                        <select 
+                          value={editStatus} 
+                          onChange={e => setEditStatus(e.target.value)} 
+                          className="w-full px-3 py-1.5 text-xs border border-gray-300 dark:border-slate-700/80 rounded-xl focus:outline-none focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 bg-white dark:bg-slate-900 text-gray-900 dark:text-slate-100 transition-all duration-200 cursor-pointer"
+                        >
+                          <option value="ACTIVE" className="bg-white dark:bg-slate-900 text-gray-900 dark:text-slate-100">ACTIVE</option>
+                          <option value="INACTIVE" className="bg-white dark:bg-slate-900 text-gray-900 dark:text-slate-100">INACTIVE</option>
+                        </select>
+                      ) : (
+                        <span className={`text-[10px] font-bold uppercase tracking-wider ${person.status === 'INACTIVE' ? 'text-red-500' : 'text-emerald-600'}`}>
+                          {person.status || 'ACTIVE'}
+                        </span>
+                      )}
                     </td>
                     <td className="px-6 py-4">
                       {isEditing ? (
@@ -672,25 +695,6 @@ export function Personnel() {
                     </div>
                   )}
 
-                  <div>
-                    <label className="block text-[11px] font-black text-gray-800 uppercase tracking-widest mb-2">Job Title</label>
-                    <div className="relative">
-                      <div className={`absolute left-3.5 top-1/2 -translate-y-1/2 ${!provJobTitle ? 'text-red-400' : 'text-gray-400'}`}>
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="7" width="20" height="14" rx="2" ry="2"></rect><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"></path></svg>
-                      </div>
-                      <input 
-                        type="text" 
-                        value={provJobTitle} 
-                        onChange={e => setProvJobTitle(e.target.value)} 
-                        placeholder="Select job title" 
-                        className={`w-full border rounded-xl pl-10 pr-3 py-3 text-sm font-semibold text-gray-800 focus:outline-none transition-shadow ${!provJobTitle ? 'border-red-400 placeholder:text-red-300 focus:border-red-500 focus:ring-1 focus:ring-red-500' : 'border-gray-200 focus:border-blue-500 focus:ring-1 focus:ring-blue-500'}`} 
-                      />
-                    </div>
-                    {!provJobTitle && (
-                      <div className="text-[11px] font-bold text-red-500 mt-2">Select a job title.</div>
-                    )}
-                  </div>
-
                   {isGlobal() && (
                     <div>
                       <label className="block text-[11px] font-black text-gray-800 uppercase tracking-widest mb-2">Role</label>
@@ -747,7 +751,7 @@ export function Personnel() {
               ) : (
                 <button 
                   onClick={() => { handleProvision(); setCurrentStep(1); }}
-                  disabled={isGlobal() && (!provRoleId || !provDeptId || !provJobTitle)}
+                  disabled={isGlobal() && (!provRoleId || !provDeptId)}
                   className="flex-1 py-3.5 rounded-xl bg-[#838994] text-white text-sm font-bold hover:bg-[#6b717b] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   Create Account

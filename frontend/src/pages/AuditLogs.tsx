@@ -1,11 +1,12 @@
-import { Search, ArrowUpDown, AlertCircle } from 'lucide-react';
-import { useEffect, useState, useMemo } from 'react';
+import { Search, ArrowUpDown, AlertCircle, ChevronDown, ChevronUp } from 'lucide-react';
+import React, { useEffect, useState, useMemo } from 'react';
 import { api } from '../lib/api';
 
 export function AuditLogs() {
   const [logs, setLogs] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [sortConfig, setSortConfig] = useState<{ key: string, direction: 'asc' | 'desc' } | null>(null);
+  const [expandedLogId, setExpandedLogId] = useState<string | null>(null);
 
   // Filter States
   const [searchQuery, setSearchQuery] = useState('');
@@ -265,56 +266,124 @@ export function AuditLogs() {
                 const dateStr = logDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
                 const timeStr = logDate.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
                 
+                const hasDetails = !!log.details;
+                const isExpanded = expandedLogId === log.id;
+
+                let parsedDetails = null;
+                if (hasDetails) {
+                  try {
+                    parsedDetails = JSON.parse(log.details);
+                  } catch (e) {}
+                }
+
                 return (
-                  <tr key={log.id} className="group hover:bg-gray-50/30 transition-colors">
-                    {/* Timestamp */}
-                    <td className="py-6 pr-6 align-top">
-                      <div className="font-bold text-gray-900 text-sm">{dateStr}</div>
-                      <div className="text-[11px] text-gray-400 font-bold mt-1">{timeStr}</div>
-                    </td>
-                    
-                    {/* Operator */}
-                    <td className="py-6 px-6 align-top">
-                      <div className="flex items-start gap-4">
-                        <div className="w-8 h-8 rounded-full border border-gray-200 bg-white text-gray-600 flex items-center justify-center font-bold text-xs uppercase flex-shrink-0 shadow-sm">
-                          {log.user?.name?.slice(0, 2) || 'SU'}
-                        </div>
-                        <div>
-                          <div className="font-bold text-gray-900 text-sm">{log.user?.name || 'System User'}</div>
-                          <div className="text-[11px] text-gray-400 font-bold mt-1 truncate max-w-[150px]">
-                            {log.user?.email || log.user?.role?.name || 'admin@csat.system'}
+                  <React.Fragment key={log.id}>
+                    <tr className={`group transition-colors ${isExpanded ? 'bg-blue-50/40' : 'hover:bg-gray-50/30'}`}>
+                      {/* Timestamp */}
+                      <td className="py-6 pr-6 align-top">
+                        <div className="font-bold text-gray-900 text-sm">{dateStr}</div>
+                        <div className="text-[11px] text-gray-400 font-bold mt-1">{timeStr}</div>
+                      </td>
+                      
+                      {/* Operator */}
+                      <td className="py-6 px-6 align-top">
+                        <div className="flex items-start gap-4">
+                          <div className="w-8 h-8 rounded-full border border-gray-200 bg-white text-gray-600 flex items-center justify-center font-bold text-xs uppercase flex-shrink-0 shadow-sm">
+                            {log.user?.name?.slice(0, 2) || 'SU'}
+                          </div>
+                          <div>
+                            <div className="font-bold text-gray-900 text-sm">{log.user?.name || 'System User'}</div>
+                            <div className="text-[11px] text-gray-400 font-bold mt-1 truncate max-w-[150px]">
+                              {log.user?.email || log.user?.role?.name || 'admin@csat.system'}
+                            </div>
                           </div>
                         </div>
-                      </div>
-                    </td>
+                      </td>
+                      
+                      {/* Action */}
+                      <td className="py-6 px-6 align-top">
+                        <span className="inline-block px-4 py-1 bg-white border border-gray-200 rounded-full text-[10px] font-black text-gray-600 uppercase tracking-widest shadow-sm">
+                          {log.category || 'SYSTEM'}
+                        </span>
+                      </td>
+                      
+                      {/* Target Entity */}
+                      <td className="py-6 px-6 align-top">
+                        <div className="font-bold text-gray-900 text-sm">
+                          {log.category === 'Surveys' ? 'Surveys' : (log.category === 'Security' ? 'Access' : 'System Accounts')}
+                        </div>
+                        <div className="text-[10px] text-gray-400 font-black uppercase tracking-widest mt-1">
+                          {log.category || 'GENERAL'}
+                        </div>
+                      </td>
+                      
+                      {/* Details */}
+                      <td className="py-6 px-6 align-top max-w-sm">
+                        <div className="flex items-start justify-between">
+                          <div>
+                            <div className="text-[10px] text-gray-400 font-black uppercase tracking-widest mb-2">
+                              DESCRIPTION
+                            </div>
+                            <div className="text-xs text-gray-600 font-semibold leading-relaxed">
+                              {log.action_description}
+                            </div>
+                          </div>
+                          {hasDetails && (
+                            <button 
+                              onClick={() => setExpandedLogId(isExpanded ? null : log.id)}
+                              className="w-8 h-8 rounded-full bg-white border border-gray-200 flex items-center justify-center text-gray-500 hover:text-blue-600 hover:border-blue-200 shadow-sm transition-colors flex-shrink-0"
+                            >
+                              {isExpanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+                            </button>
+                          )}
+                        </div>
+                      </td>
+                    </tr>
                     
-                    {/* Action */}
-                    <td className="py-6 px-6 align-top">
-                      <span className="inline-block px-4 py-1 bg-white border border-gray-200 rounded-full text-[10px] font-black text-gray-600 uppercase tracking-widest shadow-sm">
-                        {log.category || 'SYSTEM'}
-                      </span>
-                    </td>
-                    
-                    {/* Target Entity */}
-                    <td className="py-6 px-6 align-top">
-                      <div className="font-bold text-gray-900 text-sm">
-                        {log.category === 'Surveys' ? 'Surveys' : (log.category === 'Security' ? 'Access' : 'System Accounts')}
-                      </div>
-                      <div className="text-[10px] text-gray-400 font-black uppercase tracking-widest mt-1">
-                        {log.category || 'GENERAL'}
-                      </div>
-                    </td>
-                    
-                    {/* Details */}
-                    <td className="py-6 px-6 align-top max-w-sm">
-                      <div className="text-[10px] text-gray-400 font-black uppercase tracking-widest mb-2">
-                        DESCRIPTION
-                      </div>
-                      <div className="text-xs text-gray-600 font-semibold leading-relaxed">
-                        {log.action_description}
-                      </div>
-                    </td>
-                  </tr>
+                    {isExpanded && parsedDetails && (
+                      <tr className="bg-blue-50/20 border-b border-gray-100">
+                        <td colSpan={5} className="py-6 px-8">
+                          <div className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
+                            <div className="bg-gray-50/80 px-4 py-3 border-b border-gray-100">
+                              <h4 className="text-[11px] font-black text-gray-700 uppercase tracking-widest">Modification Details</h4>
+                            </div>
+                            <div className="p-5 overflow-x-auto">
+                              <table className="w-full text-left text-sm border-collapse">
+                                <thead>
+                                  <tr>
+                                    <th className="pb-3 pr-6 text-xs font-bold text-gray-400 uppercase tracking-wider w-1/4">Field</th>
+                                    <th className="pb-3 pr-6 text-xs font-bold text-gray-400 uppercase tracking-wider w-1/3">Previous Value</th>
+                                    <th className="pb-3 text-xs font-bold text-gray-400 uppercase tracking-wider w-1/3">New Value</th>
+                                  </tr>
+                                </thead>
+                                <tbody className="divide-y divide-gray-50">
+                                  {Object.keys(parsedDetails.before || {}).map(key => {
+                                    const beforeVal = parsedDetails.before[key];
+                                    const afterVal = parsedDetails.after?.[key];
+                                    return (
+                                      <tr key={key}>
+                                        <td className="py-3 pr-6 font-bold text-gray-800 capitalize">{key.replace('_id', ' ID')}</td>
+                                        <td className="py-3 pr-6">
+                                          <span className="inline-block px-3 py-1 bg-red-50 text-red-600 border border-red-100 rounded-md text-xs font-semibold line-through opacity-80">
+                                            {String(beforeVal || 'None')}
+                                          </span>
+                                        </td>
+                                        <td className="py-3">
+                                          <span className="inline-block px-3 py-1 bg-emerald-50 text-emerald-600 border border-emerald-100 rounded-md text-xs font-semibold">
+                                            {String(afterVal || 'None')}
+                                          </span>
+                                        </td>
+                                      </tr>
+                                    );
+                                  })}
+                                </tbody>
+                              </table>
+                            </div>
+                          </div>
+                        </td>
+                      </tr>
+                    )}
+                  </React.Fragment>
                 );
               })}
             </tbody>

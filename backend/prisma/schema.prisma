@@ -33,6 +33,7 @@ model User {
   role_id       String
   department_id String?
   job_title     String?
+  status        String      @default("ACTIVE")
   auditLogs     AuditLog[]
   department    Department? @relation(fields: [department_id], references: [id])
   role          Role        @relation(fields: [role_id], references: [id])
@@ -107,6 +108,7 @@ model AuditLog {
   action_description String
   category           String
   ip_address         String
+  details            String?     @db.Text
   department_id      String?
   department         Department? @relation(fields: [department_id], references: [id])
   user               User        @relation(fields: [user_id], references: [id])
