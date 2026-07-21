@@ -634,7 +634,9 @@ app.get('/api/analytics', requireAuth, async (req: any, res) => {
   // But wait, older dates added dynamically will appear at the end! 
   // Better to just return the array in some chronological order if needed, but since it's just the last 7 days + any stragglers, we'll leave it as is.
   const chartData = Object.keys(chartDataMap).map(name => {
-    const { topBox, total } = chartDataMap[name];
+    const entry = chartDataMap[name];
+    if (!entry) return { name, value: 0 };
+    const { topBox, total } = entry;
     return {
       name,
       value: total > 0 ? parseFloat(((topBox / total) * 100).toFixed(1)) : 0
