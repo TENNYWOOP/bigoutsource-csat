@@ -554,19 +554,50 @@ app.get('/api/analytics', requireAuth, async (req: any, res) => {
     }
   });
 
-  let totalScore = 0;
+  let topBoxCount = 0;
+  const distribution = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 };
+
   for (const a of ratingAnswers) {
-    const val = parseFloat(a.value);
-    if (!isNaN(val)) totalScore += val;
+    const val = parseInt(a.value);
+    if (!isNaN(val) && val >= 1 && val <= 5) {
+      distribution[val as keyof typeof distribution]++;
+      if (val >= 4) {
+        topBoxCount++;
+      }
+    }
   }
   
-  const avg = ratingAnswers.length > 0 ? (totalScore / ratingAnswers.length / 5) * 100 : 0;
+  const avg = ratingAnswers.length > 0 ? (topBoxCount / ratingAnswers.length) * 100 : 0;
   
+  const recentResponses = await prisma.surveyResponse.findMany({
+    where: { survey_id: { in: surveyIds } },
+    orderBy: { submitted_at: 'desc' },
+    take: 50,
+    include: {
+      survey: { select: { title: true } },
+      answers: { include: { question: true } }
+    }
+  });
+
+  const recentRatings = recentResponses.map(r => {
+    const ratingAnswer = r.answers.find(a => a.question.type_id === 'rating');
+    const textAnswer = r.answers.find(a => ['long_text', 'short_text', 'paragraph', 'short-text', 'long-text'].includes(a.question.type_id));
+    
+    return {
+      id: r.id,
+      surveyTitle: r.survey.title,
+      submittedAt: r.submitted_at,
+      rating: ratingAnswer ? parseInt(ratingAnswer.value) : null,
+      comment: textAnswer ? textAnswer.value : null
+    };
+  }).filter(r => r.rating !== null);
+
   res.json({
     totalResponses: responses,
     averageCsat: avg,
-    recentRatings: [], // We can populate this similarly
-    chartData: [] // Dynamic chart data will go here based on ratingAnswers
+    ratingDistribution: distribution,
+    recentRatings,
+    chartData: [] // Keep placeholder for now
   });
 });
 

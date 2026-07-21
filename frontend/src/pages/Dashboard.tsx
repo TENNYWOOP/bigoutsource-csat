@@ -1,5 +1,5 @@
-import { Users, CheckCircle, Star, ArrowRight, Building } from 'lucide-react';
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import { Users, CheckCircle, Star, Building } from 'lucide-react';
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar, Cell } from 'recharts';
 import { useEffect, useState } from 'react';
 import { api } from '../lib/api';
 import { cn } from '../lib/utils';
@@ -10,6 +10,7 @@ export function Dashboard() {
   const [stats, setStats] = useState<any>(null);
   const [departments, setDepartments] = useState<any[]>([]);
   const [selectedDept, setSelectedDept] = useState('all');
+  const [isRawDataOpen, setIsRawDataOpen] = useState(false);
   
   useEffect(() => {
     const fetchStats = async () => {
@@ -31,8 +32,28 @@ export function Dashboard() {
   }, [isGlobal]);
 
   const chartData = stats?.chartData || [];
-
   const recentRatings = stats?.recentRatings || [];
+  const distributionData = stats?.ratingDistribution 
+    ? Object.entries(stats.ratingDistribution).map(([rating, count]) => ({ rating: `${rating} Star`, count: count as number }))
+    : [];
+
+  const exportCSV = () => {
+    if (recentRatings.length === 0) return;
+    const headers = ['Date', 'Survey', 'Rating', 'Comment'];
+    const csvContent = [
+      headers.join(','),
+      ...recentRatings.map((r: any) => `"${new Date(r.submittedAt).toLocaleString()}","${r.surveyTitle}",${r.rating},"${(r.comment || '').replace(/"/g, '""')}"`)
+    ].join('\n');
+    
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.setAttribute('download', 'csat_raw_data.csv');
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
 
   return (
     <div className="flex gap-6 h-full">
@@ -67,9 +88,9 @@ export function Dashboard() {
             <div className="flex justify-between items-start mb-6">
               <div>
                 <div className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">Quality Score</div>
-                <h3 className="text-xl font-bold text-gray-900">Average CSAT</h3>
+                <h3 className="text-xl font-bold text-gray-900">Top-Box CSAT</h3>
                 <p className="text-sm text-gray-400 mt-0.5 flex items-center gap-1">
-                  <span className="w-3 h-3 rounded bg-gray-100 flex items-center justify-center text-[8px]">📈</span> Key Performance Index
+                  <span className="w-3 h-3 rounded bg-gray-100 flex items-center justify-center text-[8px]">📈</span> % of 4 and 5 Star Ratings
                 </p>
               </div>
               <div className="w-10 h-10 rounded-full bg-emerald-50 flex items-center justify-center text-emerald-600">
@@ -84,28 +105,53 @@ export function Dashboard() {
         </div>
 
         {/* Chart Area */}
-        <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 flex-1 flex flex-col">
-          <div className="flex justify-between items-start mb-6">
-            <div>
-              <h3 className="text-lg font-bold text-gray-900">CSAT This Month <span className="text-blue-500 text-sm bg-blue-50 px-2 py-0.5 rounded-md ml-2 font-semibold">Current</span></h3>
-              <p className="text-sm text-gray-500 mt-1">Hourly feedback aggregated into historical daily indices.</p>
+        <div className="grid grid-cols-2 gap-6 flex-1 min-h-[300px]">
+          {/* Trend Line Chart */}
+          <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 flex flex-col">
+            <div className="flex justify-between items-start mb-6">
+              <div>
+                <h3 className="text-lg font-bold text-gray-900">CSAT This Month <span className="text-blue-500 text-sm bg-blue-50 px-2 py-0.5 rounded-md ml-2 font-semibold">Current</span></h3>
+                <p className="text-sm text-gray-500 mt-1">Hourly feedback aggregated into historical daily indices.</p>
+              </div>
             </div>
-            <div className="flex items-center gap-2 text-sm font-medium text-gray-600">
-              <span className="w-2.5 h-2.5 rounded-full bg-blue-500"></span>
-              CSAT Score %
+            
+            <div className="flex-1 w-full">
+              <ResponsiveContainer width="100%" height="100%">
+                <LineChart data={chartData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E5E7EB" />
+                  <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{fill: '#6B7280', fontSize: 12}} dy={10} />
+                  <YAxis axisLine={false} tickLine={false} tick={{fill: '#6B7280', fontSize: 12}} tickFormatter={(val) => `${val}%`} />
+                  <Tooltip />
+                  <Line type="monotone" dataKey="value" stroke="#3B82F6" strokeWidth={3} dot={false} activeDot={{r: 6}} />
+                </LineChart>
+              </ResponsiveContainer>
             </div>
           </div>
-          
-          <div className="flex-1 min-h-[250px] w-full">
-            <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={chartData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
-                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E5E7EB" />
-                <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{fill: '#6B7280', fontSize: 12}} dy={10} />
-                <YAxis axisLine={false} tickLine={false} tick={{fill: '#6B7280', fontSize: 12}} tickFormatter={(val) => `${val}%`} />
-                <Tooltip />
-                <Line type="monotone" dataKey="value" stroke="#3B82F6" strokeWidth={3} dot={false} activeDot={{r: 6}} fill="url(#colorUv)" />
-              </LineChart>
-            </ResponsiveContainer>
+
+          {/* Distribution Bar Chart */}
+          <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 flex flex-col">
+            <div className="flex justify-between items-start mb-6">
+              <div>
+                <h3 className="text-lg font-bold text-gray-900">Rating Distribution</h3>
+                <p className="text-sm text-gray-500 mt-1">Breakdown of all responses by star rating.</p>
+              </div>
+            </div>
+            
+            <div className="flex-1 w-full">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={distributionData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E5E7EB" />
+                  <XAxis dataKey="rating" axisLine={false} tickLine={false} tick={{fill: '#6B7280', fontSize: 12}} dy={10} />
+                  <YAxis axisLine={false} tickLine={false} tick={{fill: '#6B7280', fontSize: 12}} allowDecimals={false} />
+                  <Tooltip cursor={{fill: '#F3F4F6'}} />
+                  <Bar dataKey="count" radius={[4, 4, 0, 0]}>
+                    {distributionData.map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={parseInt(entry.rating) >= 4 ? '#10B981' : (parseInt(entry.rating) === 3 ? '#FBBF24' : '#EF4444')} />
+                    ))}
+                  </Bar>
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
           </div>
         </div>
 
@@ -134,7 +180,12 @@ export function Dashboard() {
 
         <div className="flex justify-between items-center mb-6">
           <h3 className="text-lg font-bold text-gray-900">Recent Ratings</h3>
-          <span className="text-xs font-semibold text-blue-600 bg-blue-50 px-2.5 py-1 rounded-full">{recentRatings.length} total</span>
+          <button 
+            onClick={() => setIsRawDataOpen(true)}
+            className="text-xs font-semibold text-blue-600 bg-blue-50 px-2.5 py-1 rounded-full hover:bg-blue-100 transition-colors"
+          >
+            View Raw Data
+          </button>
         </div>
         
         {/* Rating List */}
@@ -145,37 +196,94 @@ export function Dashboard() {
               <div className="flex justify-between items-start mb-2">
                 <div className="flex items-center gap-1 text-yellow-400">
                   {[...Array(5)].map((_, i) => (
-                    <Star key={i} className="w-3.5 h-3.5 fill-current" />
+                    <Star key={i} className={cn("w-3.5 h-3.5", i < (rating.rating || 0) ? "fill-current" : "text-gray-300")} />
                   ))}
                 </div>
                 <span className={cn(
                   "text-sm font-bold px-2 py-0.5 rounded-md",
-                  rating.score >= 9 ? "bg-emerald-50 text-emerald-600" : "bg-red-50 text-red-600"
+                  rating.rating >= 4 ? "bg-emerald-50 text-emerald-600" : (rating.rating === 3 ? "bg-yellow-50 text-yellow-600" : "bg-red-50 text-red-600")
                 )}>
-                  {rating.score?.toFixed(1)}
+                  {rating.rating?.toFixed(1)}
                 </span>
               </div>
               
               <div className="mb-2">
-                <h4 className="font-bold text-gray-900 text-sm">{rating.name} <span className="font-normal text-xs bg-gray-100 text-gray-600 px-1.5 py-0.5 rounded ml-1">{rating.dept}</span></h4>
+                <h4 className="font-bold text-gray-900 text-sm">{rating.surveyTitle}</h4>
               </div>
               
               <p className="text-sm text-gray-500 italic mb-4 line-clamp-2">
-                "{rating.comment}"
+                "{rating.comment || "No comment provided."}"
               </p>
               
               <div className="flex justify-between items-center text-xs">
                 <span className="text-gray-400 flex items-center gap-1">
-                  <span className="w-3 h-3 border border-gray-300 rounded-full flex items-center justify-center text-[8px]">🕒</span> {new Date(rating.time).toLocaleDateString()}
+                  <span className="w-3 h-3 border border-gray-300 rounded-full flex items-center justify-center text-[8px]">🕒</span> {new Date(rating.submittedAt).toLocaleDateString()}
                 </span>
-                <button className="text-blue-600 font-semibold flex items-center gap-1 hover:text-blue-700">
-                  View details <ArrowRight className="w-3 h-3" />
-                </button>
               </div>
             </div>
           ))}
         </div>
       </div>
+
+      {/* Raw Data Modal */}
+      {isRawDataOpen && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
+          <div className="bg-white w-full max-w-4xl max-h-[80vh] rounded-2xl shadow-2xl border border-gray-100 overflow-hidden flex flex-col">
+            <div className="px-6 py-4 border-b border-gray-100 flex justify-between items-center bg-white">
+              <div>
+                <h3 className="font-extrabold text-lg text-[#0f172a]">Raw Rating Data</h3>
+                <p className="text-sm text-gray-500">Detailed list of all recent customer responses.</p>
+              </div>
+              <div className="flex items-center gap-3">
+                <button 
+                  onClick={exportCSV}
+                  className="px-4 py-1.5 bg-[#0f172a] rounded-lg text-xs font-bold text-white hover:bg-[#1e293b] transition-colors"
+                >
+                  Export CSV
+                </button>
+                <button onClick={() => setIsRawDataOpen(false)} className="px-4 py-1.5 border border-gray-200 rounded-lg text-xs font-bold text-[#0f172a] hover:bg-gray-50 transition-colors">
+                  Close
+                </button>
+              </div>
+            </div>
+            
+            <div className="flex-1 overflow-auto p-0">
+              <table className="w-full text-left border-collapse">
+                <thead>
+                  <tr className="bg-gray-50/80 text-xs uppercase tracking-wider text-gray-500 font-bold border-b border-gray-200 sticky top-0">
+                    <th className="py-3 px-6">Date</th>
+                    <th className="py-3 px-6">Survey Name</th>
+                    <th className="py-3 px-6 text-center">Rating</th>
+                    <th className="py-3 px-6 w-1/2">Comment</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-100 bg-white text-sm text-gray-700">
+                  {recentRatings.map((rating: any, idx: number) => (
+                    <tr key={idx} className="hover:bg-gray-50/50 transition-colors">
+                      <td className="py-3 px-6 whitespace-nowrap">{new Date(rating.submittedAt).toLocaleString()}</td>
+                      <td className="py-3 px-6 font-medium text-gray-900">{rating.surveyTitle}</td>
+                      <td className="py-3 px-6 text-center">
+                        <span className={cn(
+                          "inline-block font-bold px-2 py-0.5 rounded text-xs",
+                          rating.rating >= 4 ? "bg-emerald-50 text-emerald-600" : (rating.rating === 3 ? "bg-yellow-50 text-yellow-600" : "bg-red-50 text-red-600")
+                        )}>
+                          {rating.rating} ★
+                        </span>
+                      </td>
+                      <td className="py-3 px-6">{rating.comment || <span className="text-gray-400 italic">No comment</span>}</td>
+                    </tr>
+                  ))}
+                  {recentRatings.length === 0 && (
+                    <tr>
+                      <td colSpan={4} className="py-8 text-center text-gray-400 italic">No raw data available.</td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
