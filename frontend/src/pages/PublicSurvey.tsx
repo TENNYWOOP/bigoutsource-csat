@@ -135,7 +135,7 @@ export function PublicSurvey() {
                       "w-8 h-8 transition-colors",
                       isSelected 
                         ? "text-amber-500 fill-amber-500" 
-                        : "text-gray-300 fill-gray-50 hover:text-amber-400 hover:fill-amber-100"
+                        : "text-slate-400 fill-transparent hover:text-amber-400 hover:fill-amber-100"
                     )}
                   />
                 </button>
